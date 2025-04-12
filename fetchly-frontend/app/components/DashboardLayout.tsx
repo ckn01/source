@@ -132,7 +132,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {isSidebarOpen && (
             <div className="flex flex-col">
               <span className="text-sm font-medium">Username</span>
-              <span className="text-xs text-amber-200">user@email.com</span>
+              <span className="text-xs text-amber-200 font-bold">user@email.com</span>
+              <div className="text-xs text-amber-100">role permission</div>
             </div>
           )}
         </div>
