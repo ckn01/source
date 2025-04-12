@@ -69,6 +69,26 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
         <tbody>
           {rows.length > 0 ? (
             rows.map((row, rowIndex) => {
+              // Pre-calculate which field should be flexible
+              let totalFixedWidth = 0;
+              let expandableFieldCode: string | null = null;
+
+              if (rowIndex === 0) {
+                const visibleFields = fields.filter(
+                  (field) =>
+                    is_displaying_metadata_column || !metadataColumnList.includes(field.field_code)
+                );
+
+                totalFixedWidth = visibleFields.reduce((sum, field) => {
+                  return sum + (field.field_name.length * 10 + 40);
+                }, 0);
+
+                // If total is less than 1000px (arbitrary threshold for ~100%), pick first visible field to flex
+                if (totalFixedWidth < 1000) {
+                  expandableFieldCode = visibleFields[0]?.field_code ?? null;
+                }
+              }
+
               return (
                 <tr key={rowIndex}>
                   {fields.map((field) => {
@@ -76,20 +96,24 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                       return null; // skip rendering this column
                     }
 
+                    const rowWidth = field.field_name.length * 10 + 40;
+                    const isExpandable = rowIndex === 0 && field.field_code === expandableFieldCode;
+
                     return (
                       <td
                         key={field.field_code}
                         className="px-2 py-2 border border-gray-100 text-gray-600"
                         style={{
-                          minWidth: `${field.field_name.length * 10 + 40}px`,
+                          minWidth: `${rowWidth}px`,
+                          ...(isExpandable ? { width: "100%" } : {})
                         }}
                       >
                         {String(row[field.field_code]?.value ?? "")}
                       </td>
-                    )
+                    );
                   })}
                 </tr>
-              )
+              );
             })
           ) : (
             <tr>

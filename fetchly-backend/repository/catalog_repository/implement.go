@@ -162,7 +162,6 @@ func (r *repository) GetObjectData(ctx context.Context, request entity.CatalogQu
 
 	// Get list of columns
 	columnsList, columnsString, joinQueryMap, joinQueryOrder, err := r.GetColumnList(ctx, request)
-	fmt.Print("joinQueryMap: ", joinQueryMap)
 	if err != nil {
 		return resp, err
 	}
