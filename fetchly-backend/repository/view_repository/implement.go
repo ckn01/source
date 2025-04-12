@@ -61,8 +61,14 @@ func (r *repository) GetViewContentByKeys(ctx context.Context, request entity.Ge
 		layoutType = fmt.Sprintf("'%s'", layoutType)
 	}
 
+	db := r.db
+
+	if r.cfg.IsDebugMode {
+		db.Debug()
+	}
+
 	query := fmt.Sprintf("SELECT * FROM get_view_content_all(%s, %s, %s, %s, %s)", tenantCode, productCode, objectCode, viewContentCode, layoutType)
-	rows, err := r.db.Raw(query).Rows()
+	rows, err := db.Raw(query).Rows()
 	if err != nil {
 		return resp, err
 	}
@@ -80,10 +86,10 @@ func (r *repository) GetViewContentByKeys(ctx context.Context, request entity.Ge
 		return nil, err
 	}
 
-	// Prepare the result
-	var columnsList []map[string]interface{}
+	// Prepare the resul
+	var columnsList []map[string]any
 	for i, colName := range columnNames {
-		columnInfo := map[string]interface{}{
+		columnInfo := map[string]any{
 			entity.FieldDataType:           columnTypes[i].DatabaseTypeName(),                                  // SQL type
 			entity.FieldColumnCode:         colName,                                                            // Column name as code
 			entity.FieldColumnName:         helper.CapitalizeWords(helper.ReplaceUnderscoreWithSpace(colName)), // Use the column name as a placeholder for "name"
@@ -99,13 +105,38 @@ func (r *repository) GetViewContentByKeys(ctx context.Context, request entity.Ge
 		ProductCode: request.ProductCode,
 	}
 
-	for rows.Next() {
+	if rows.Next() {
 		item, err := util.HandleSingleRow(columnsList, rows, catalogQuery)
 		if err != nil {
 			return resp, err
 		}
 
 		resp = item
+	}
+
+	return resp, nil
+}
+
+func (r *repository) GetNavigationByViewContentSerial(ctx context.Context, request entity.GetNavigationItemByViewContentSerialRequest) (resp []entity.Navigation, err error) {
+	db := r.db.Model(&Navigation{})
+
+	if r.cfg.IsDebugMode {
+		db.Debug()
+	}
+
+	if request.ViewContentSerial == "" {
+		return resp, fmt.Errorf("view content serial is required")
+	}
+
+	db.Where("view_content_serial = ?", request.ViewContentSerial)
+
+	results := []Navigation{}
+	if err := db.Find(&results).Error; err != nil {
+		return resp, err
+	}
+
+	for _, val := range results {
+		resp = append(resp, val.ToEntity())
 	}
 
 	return resp, nil

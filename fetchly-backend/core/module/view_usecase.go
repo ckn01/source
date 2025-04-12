@@ -17,6 +17,7 @@ import (
 
 type ViewUsecase interface {
 	GetContentLayoutByKeys(ctx context.Context, request entity.GetViewContentByKeysRequest, catalogQuery entity.CatalogQuery) (resp entity.ViewContentResponse, err error)
+	GetNavigationByViewContentSerial(ctx context.Context, request entity.GetNavigationItemByViewContentSerialRequest) (resp []entity.Navigation, treeResp []map[string]any, err error)
 }
 
 type viewUsecase struct {
@@ -33,6 +34,62 @@ func NewViewUsecase(cfg config.Config, catalogRepo repository.CatalogRepository,
 		viewRepo:    viewRepo,
 		catalogUc:   catalogUc,
 	}
+}
+
+func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, request entity.GetNavigationItemByViewContentSerialRequest) (resp []entity.Navigation, treeResp []map[string]any, err error) {
+	resp, err = uc.viewRepo.GetNavigationByViewContentSerial(ctx, request)
+	if err != nil {
+		return resp, treeResp, err
+	}
+
+	// get parent path and root path
+	for i, val := range resp {
+		pathParts := strings.Split(val.Path, ".")
+
+		resp[i].RootCode = pathParts[0]
+		resp[i].ParentCode = strings.Join(pathParts[:len(pathParts)-1], ".")
+	}
+
+	// TODO: return two variables, first flat list, the second is tree hashmap
+	treeMap := make(map[string]map[string]any)
+
+	for _, nav := range resp {
+		// Initialize node
+		node := map[string]any{
+			"serial":           nav.Serial,
+			"view_content":     nav.ViewContent,
+			"code":             nav.Code,
+			"title":            nav.Title,
+			"description":      nav.Description,
+			"url":              nav.URL,
+			"navigation_level": nav.NavigationLevel,
+			"path":             nav.Path,
+			"parent_code":      nav.ParentCode,
+			"root_code":        nav.RootCode,
+			"children":         []map[string]any{},
+		}
+
+		treeMap[nav.Code] = node
+	}
+
+	// Build tree structure by linking parent-child nodes
+	var roots []map[string]any
+
+	for _, nav := range resp {
+		node := treeMap[nav.Code]
+		if parent, ok := treeMap[nav.ParentCode]; ok && nav.ParentCode != "" {
+			// Attach to parent
+			children := parent["children"].([]map[string]any)
+			parent["children"] = append(children, node)
+		} else {
+			// No parent means it's a root
+			roots = append(roots, node)
+		}
+
+		treeResp = roots
+	}
+
+	return resp, treeResp, nil
 }
 
 func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entity.GetViewContentByKeysRequest, catalogQuery entity.CatalogQuery) (resp entity.ViewContentResponse, err error) {
@@ -212,45 +269,64 @@ func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entit
 		}
 	}
 
-	originalFields, _, _, _, err := uc.catalogRepo.GetColumnList(ctx, catalogQuery)
-	if err != nil {
-		return resp, err
-	}
+	injectedFields := []map[string]any{}
 
-	// handle custom object fields based on object field table
-	objectFields := map[string]any{}
-	if catalogQuery.ObjectSerial != "" {
-		objectFields, err = uc.catalogUc.GetObjectFieldsByObjectCode(ctx, catalogQuery)
+	switch resp.ViewContent.LayoutType {
+	case "record", "detail", "form":
+		originalFields, _, _, _, err := uc.catalogRepo.GetColumnList(ctx, catalogQuery)
 		if err != nil {
 			return resp, err
 		}
-	}
 
-	for i, originalField := range originalFields {
-		fieldCode := originalField[entity.FieldColumnCode].(string)
-
-		if field, ok := objectFields[fieldCode]; ok {
-			data, ok := field.(entity.ObjectFields)
-			if !ok {
-				continue
+		// handle custom object fields based on object field table
+		objectFields := map[string]any{}
+		if catalogQuery.ObjectSerial != "" {
+			objectFields, err = uc.catalogUc.GetObjectFieldsByObjectCode(ctx, catalogQuery)
+			if err != nil {
+				return resp, err
 			}
-
-			originalField[entity.FieldDataType] = data.DataType.Code
-			originalField[entity.FieldColumnName] = data.DisplayName
-
 		}
 
-		//  camel case field name
-		originalField[entity.FieldColumnName] = strings.ReplaceAll(cases.Title(language.English).String(originalField[entity.FieldColumnName].(string)), "_", " ")
-		originalField[entity.FieldDataType] = cases.Title(language.English).String(originalField[entity.FieldDataType].(string))
+		for i, originalField := range originalFields {
+			fieldCode := originalField[entity.FieldColumnCode].(string)
 
-		originalFields[i] = originalField
+			if field, ok := objectFields[fieldCode]; ok {
+				data, ok := field.(entity.ObjectFields)
+				if !ok {
+					continue
+				}
+
+				originalField[entity.FieldDataType] = data.DataType.Code
+				originalField[entity.FieldColumnName] = data.DisplayName
+			}
+
+			//  camel case field name
+			originalField[entity.FieldColumnName] = strings.ReplaceAll(cases.Title(language.English).String(originalField[entity.FieldColumnName].(string)), "_", " ")
+			originalField[entity.FieldDataType] = cases.Title(language.English).String(originalField[entity.FieldDataType].(string))
+
+			originalFields[i] = originalField
+		}
+
+		resp.Fields = originalFields
+		injectedFields = originalFields
+	case "navigation":
+		// Handle layout logic for navigation
+		// get list of navigation item
+		// inject into view content
+
+		flatNavigation, treeNavigation, err := uc.GetNavigationByViewContentSerial(ctx, entity.GetNavigationItemByViewContentSerialRequest{
+			ViewContentSerial: resp.ViewContent.Serial,
+		})
+		if err != nil {
+			return resp, err
+		}
+
+		resp.Fields = entity.ConvertFlatNavigationToMapList(flatNavigation)
+		injectedFields = treeNavigation
 	}
 
-	resp.Fields = originalFields
-
 	// fetching layout
-	resp.Layout, err = handleViewLayout(resp.ViewContent.ViewLayout.LayoutConfig, resp.Fields, request)
+	resp.Layout, err = handleViewLayout(resp.ViewContent.ViewLayout.LayoutConfig, injectedFields, request)
 	if err != nil {
 		return resp, err
 	}
@@ -309,7 +385,7 @@ func handleViewLayout(viewLayoutConfig map[string]any, fields []map[string]any, 
 				child.Set(reflect.ValueOf(childConfig))
 			}
 		}
-	case "table", "detail", "form":
+	case "table", "detail", "form", "navigation":
 		className := ""
 		if _, ok := viewLayoutConfig[entity.CLASS_NAME]; ok {
 			className = viewLayoutConfig[entity.CLASS_NAME].(string)

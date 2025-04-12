@@ -53,3 +53,48 @@ type ViewContent struct {
 	IsDefault     bool       `json:"is_default"`
 	IsShownInList bool       `json:"is_shown_in_list"`
 }
+
+type GetNavigationItemByViewContentSerialRequest struct {
+	ViewContentSerial string `json:"view_content_serial"`
+}
+
+type Navigation struct {
+	Serial          string      `json:"serial"`
+	ViewContent     ViewContent `json:"view_content"`
+	Code            string      `json:"code"`
+	Title           string      `json:"title"`
+	Description     string      `json:"description"`
+	URL             string      `json:"url"`
+	NavigationLevel int32       `json:"navigation_level"`
+	Path            string      `json:"path"`
+	ParentCode      string      `json:"parent_code"`
+	RootCode        string      `json:"root_code"`
+}
+
+func (nav *Navigation) ConvertFlatNavigationToMap() map[string]any {
+	item := map[string]any{
+		"serial":           nav.Serial,
+		"view_content":     nav.ViewContent,
+		"code":             nav.Code,
+		"title":            nav.Title,
+		"description":      nav.Description,
+		"url":              nav.URL,
+		"navigation_level": nav.NavigationLevel,
+		"path":             nav.Path,
+		"parent_code":      nav.ParentCode,
+		"root_code":        nav.RootCode,
+		"children":         []map[string]any{}, // prefill if you're going to use it for tree building
+	}
+
+	return item
+}
+
+func ConvertFlatNavigationToMapList(flat []Navigation) []map[string]any {
+	var result []map[string]any
+
+	for _, nav := range flat {
+		result = append(result, nav.ConvertFlatNavigationToMap())
+	}
+
+	return result
+}
