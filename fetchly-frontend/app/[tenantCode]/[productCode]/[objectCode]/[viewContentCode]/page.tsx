@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import ReactPaginate from 'react-paginate';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -38,113 +39,102 @@ interface DynamicTableProps {
   is_displaying_metadata_column?: Boolean;
   currentPage?: number;
   totalPages?: number;
-  onPageChange: (page: number) => void;
+  loading?: boolean;
 }
 
-const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, onPageChange }: DynamicTableProps) => {
+const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading }: DynamicTableProps) => {
   return (
-    <div className="overflow-x-auto">
-      <table className="table-auto border border-gray-100 whitespace-nowrap">
-        <thead>
-          <tr className="bg-gray-100">
-            {fields.map((field) => {
-              if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
-                return null; // skip rendering this column
-              }
+    <div className="relative overflow-x-auto">
+      <div className="relative">
+        {loading && (
+          <div className="absolute top-0 left-0 w-full h-full bg-white/60 flex items-center justify-center z-10">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        )}
 
-              return (
-                <th
-                  key={field.field_code}
-                  className="px-2 py-2 border border-gray-100 text-left"
-                  style={{
-                    minWidth: `${field.field_name.length * 10 + 40}px`,
-                  }}
-                >
-                  {field.field_name}
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length > 0 ? (
-            rows.map((row, rowIndex) => {
-              // Pre-calculate which field should be flexible
-              let totalFixedWidth = 0;
-              let expandableFieldCode: string | null = null;
-
-              if (rowIndex === 0) {
-                const visibleFields = fields.filter(
-                  (field) =>
-                    is_displaying_metadata_column || !metadataColumnList.includes(field.field_code)
-                );
-
-                totalFixedWidth = visibleFields.reduce((sum, field) => {
-                  return sum + (field.field_name.length * 10 + 40);
-                }, 0);
-
-                // If total is less than 1000px (arbitrary threshold for ~100%), pick first visible field to flex
-                if (totalFixedWidth < 1000) {
-                  expandableFieldCode = visibleFields[0]?.field_code ?? null;
+        <table className="table-auto border border-gray-100 whitespace-nowrap">
+          <thead>
+            <tr className="bg-gray-100">
+              {fields.map((field) => {
+                if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
+                  return null; // skip rendering this column
                 }
-              }
 
-              return (
-                <tr key={rowIndex}>
-                  {fields.map((field) => {
-                    if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
-                      return null; // skip rendering this column
-                    }
-
-                    const rowWidth = field.field_name.length * 10 + 40;
-                    const isExpandable = rowIndex === 0 && field.field_code === expandableFieldCode;
-
-                    return (
-                      <td
-                        key={field.field_code}
-                        className="px-2 py-2 border border-gray-100 text-gray-600"
-                        style={{
-                          minWidth: `${rowWidth}px`,
-                          ...(isExpandable ? { width: "100%" } : {})
-                        }}
-                      >
-                        {String(row[field.field_code]?.value ?? "")}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td
-                colSpan={fields.length}
-                className="text-center text-gray-400 py-4"
-              >
-                No data available
-              </td>
+                return (
+                  <th
+                    key={field.field_code}
+                    className="px-2 py-2 border border-gray-100 text-left"
+                    style={{
+                      minWidth: `${field.field_name.length * 10 + 40}px`,
+                    }}
+                  >
+                    {field.field_name}
+                  </th>
+                )
+              })}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length > 0 ? (
+              rows.map((row, rowIndex) => {
+                // Pre-calculate which field should be flexible
+                let totalFixedWidth = 0;
+                let expandableFieldCode: string | null = null;
 
-      {/* Pagination UI */}
-      <div className="flex justify-left mt-4 space-x-2 ml-4">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span className="px-3 py-1">{currentPage} / {totalPages}</span>
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          className="px-3 py-1 border rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+                if (rowIndex === 0) {
+                  const visibleFields = fields.filter(
+                    (field) =>
+                      is_displaying_metadata_column || !metadataColumnList.includes(field.field_code)
+                  );
+
+                  totalFixedWidth = visibleFields.reduce((sum, field) => {
+                    return sum + (field.field_name.length * 10 + 40);
+                  }, 0);
+
+                  // If total is less than 1000px (arbitrary threshold for ~100%), pick first visible field to flex
+                  if (totalFixedWidth < 1000) {
+                    expandableFieldCode = visibleFields[0]?.field_code ?? null;
+                  }
+                }
+
+                return (
+                  <tr key={rowIndex}>
+                    {fields.map((field) => {
+                      if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
+                        return null; // skip rendering this column
+                      }
+
+                      const rowWidth = field.field_name.length * 10 + 40;
+                      const isExpandable = rowIndex === 0 && field.field_code === expandableFieldCode;
+
+                      return (
+                        <td
+                          key={field.field_code}
+                          className="px-2 py-2 border border-gray-100 text-gray-600"
+                          style={{
+                            minWidth: `${rowWidth}px`,
+                            ...(isExpandable ? { width: "100%" } : {})
+                          }}
+                        >
+                          {String(row[field.field_code]?.value ?? "")}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan={fields.length}
+                  className="text-center text-gray-400 py-4"
+                >
+                  No data available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -166,6 +156,12 @@ export default function DynamicPage() {
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1)
+
+  const handlePageClick = (pageIndex: any) => {
+    let selectedPage = pageIndex.selected + 1;
+
+    fetchData(responseLayout, selectedPage)
+  };
 
   const fetchLayout = async () => {
     try {
@@ -194,15 +190,17 @@ export default function DynamicPage() {
       document.title = `${layoutData.view_content.object.display_name ? layoutData.view_content.object.display_name : toLabel(objectCode)} (${layoutData.view_content.name}) - ${layoutData.view_content.tenant.name}`;
 
       // Setelah layout selesai, baru fetch data
-      await fetchData(layoutData);
+      await fetchData(layoutData, currentPage);
     } catch (error) {
       console.error("Layout API error:", error);
       setResponseLayout({ error: (error as Error).message });
     }
   };
 
-  const fetchData = async (layoutData: any) => {
+  const fetchData = async (layoutData: any, page: number) => {
     try {
+      setIsLoading(true)
+
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
         {
@@ -217,7 +215,7 @@ export default function DynamicPage() {
             }, {}) || {},
             filters: [],
             orders: [],
-            page: currentPage,
+            page: page ? page : currentPage,
             page_size: 20,
             object_code: objectCode,
             tenant_code: tenantCode,
@@ -233,8 +231,8 @@ export default function DynamicPage() {
 
       const data = await dataResponse.json();
       setResponseData(data.data);
-      setCurrentPage(data.page);
-      setTotalPages(data.total_page);
+      setCurrentPage(data.data?.page);
+      setTotalPages(data.data?.total_page);
 
       setIsLoading(false);
     } catch (error) {
@@ -277,11 +275,27 @@ export default function DynamicPage() {
                       is_displaying_metadata_column={child.props?.is_displaying_metadata_column}
                       currentPage={currentPage}
                       totalPages={totalPages}
-                      onPageChange={async (newPage) => {
-                        setCurrentPage(newPage);
-                        await fetchData(responseLayout);
-                      }}
+                      loading={isLoading}
                     />
+
+                    <div className="flex justify-end mt-4 mr-4">
+                      <ReactPaginate
+                        containerClassName="flex space-x-2 items-center text-sm"
+                        pageClassName="border px-3 py-1 rounded cursor-pointer"
+                        activeClassName="bg-blue-500 text-white active cursor-pointer"
+                        previousClassName="px-3 py-1 border rounded cursor-pointer"
+                        nextClassName="px-3 py-1 border rounded cursor-pointer"
+                        breakClassName="px-3 py-1"
+                        disabledClassName="opacity-50 cursor-not-allowed"
+                        previousLabel="Prev"
+                        nextLabel="Next"
+                        breakLabel={'...'}
+                        pageCount={totalPages} // Total number of pages
+                        marginPagesDisplayed={2}
+                        pageRangeDisplayed={5}
+                        onPageChange={handlePageClick}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               );
