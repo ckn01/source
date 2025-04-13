@@ -1,8 +1,10 @@
 "use client";
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import SidebarPanel from "@/components/SidebarPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
+import { CheckCircle, Filter, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReactPaginate from 'react-paginate';
@@ -144,6 +146,7 @@ export default function DynamicPage() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode, viewContentCode } = params;
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [responseLayout, setResponseLayout] = useState<any>(null);
   const [responseData, setResponseData] = useState<any>(null);
@@ -161,6 +164,46 @@ export default function DynamicPage() {
     let selectedPage = pageIndex.selected + 1;
 
     fetchData(responseLayout, selectedPage)
+  };
+
+  interface FilterItem {
+    [key: string]: { value: string; operator: string };
+  }
+
+  const [filters, setFilters] = useState<{
+    operator: string;
+    filter_item: FilterItem;
+  }[]>([
+    {
+      operator: "AND",
+      filter_item: {},
+    },
+  ]);
+
+  const addField = () => {
+    const newFieldKey = prompt("Enter field name (e.g., status, bentuk, etc):");
+    if (!newFieldKey) return;
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      updated.filter_item[newFieldKey] = { value: "", operator: "equal" };
+      return [updated];
+    });
+  };
+
+  const updateField = (fieldName: string, key: string, newVal: string) => {
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      updated.filter_item[fieldName][key as 'value' | 'operator'] = newVal;
+      return [updated];
+    });
+  };
+
+  const deleteField = (fieldName: string) => {
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      delete updated.filter_item[fieldName];
+      return [updated];
+    });
   };
 
   const fetchLayout = async () => {
@@ -258,17 +301,86 @@ export default function DynamicPage() {
 
   return (
     <div className="flex flex-col items-left justify-left min-h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-cyan-600 mb-3">
-          {viewContent?.object?.display_name ? viewContent?.object?.display_name : toLabel(objectCode)}
+          {viewContent?.object?.display_name ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})` : toLabel(objectCode)}
         </h1>
+
 
         <div className="space-y-4">
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "table") {
               return (
-                <Card key={index} className="shadow-md">
+                <Card key={index} className="shadow-md pt-0 pb-4">
                   <CardContent className="p-0 pb-0 overflow-x-auto">
+                    <div className="flex justify-end gap-2 mb-2">
+                      <button
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition shadow-md"
+                        onClick={() => {
+                          setIsSidebarOpen(true);
+                        }}
+                      >
+                        <Filter size={18} />
+                        Filter
+                      </button>
+                    </div>
+
+                    {/* The SidebarPanel */}
+                    <SidebarPanel isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
+                      <div className="p-4 space-y-4">
+                        <h2 className="text-lg font-semibold">Dynamic Filter</h2>
+                        {Object.entries(filters[0].filter_item).map(([field, config]) => (
+                          <div key={field} className="flex items-center gap-2">
+                            <div className="w-1/4 text-sm font-medium text-gray-700">{field}</div>
+                            <select
+                              className="border rounded px-2 py-1 text-sm"
+                              value={(config as { value: string; operator: string }).operator}
+                              onChange={(e) => updateField(field, "operator", e.target.value)}
+                            >
+                              <option value="equal">equal</option>
+                              <option value="contains">contains</option>
+                            </select>
+                            <input
+                              className="border rounded px-2 py-1 text-sm w-1/2"
+                              placeholder="value"
+                              value={(config as { value: string; operator: string }).value}
+                              onChange={(e) => updateField(field, "value", e.target.value)}
+                            />
+                            <button
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => deleteField(field)}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        ))}
+
+                        <div>
+                          <button
+                            onClick={addField}
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            + Add Filter Field
+                          </button>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4">
+                          <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="px-4 flex items-center py-2 gap-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md cursor-pointer"
+                          >
+                            <XCircle size={18} /> Cancel
+                          </button>
+                          <button
+                            onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
+                            className="px-4 flex items-center gap-2 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 shadow-md cursor-pointer"
+                          >
+                            <CheckCircle size={18} /> Apply
+                          </button>
+                        </div>
+                      </div>
+                    </SidebarPanel>
+
                     <DynamicTable
                       fields={child.props?.fields || []}
                       rows={responseData?.items || []}
