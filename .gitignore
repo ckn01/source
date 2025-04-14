@@ -1,2 +1,4 @@
 **/node_modules
-**/.nextcd fet
+**/.next
+**/vendor
+**/storage
