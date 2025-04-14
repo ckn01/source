@@ -19,10 +19,10 @@ export default function SidebarPanel({
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-160 bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-0 right-0 h-full w-120 bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
           }`}
       >
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-3 border-b">
           <h1 className="text-2xl font-bold text-cyan-600 mb-1">
             Filter
           </h1>
@@ -30,7 +30,9 @@ export default function SidebarPanel({
             <X className="w-5 h-5 cursor-pointer" />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-2">
+          {children}
+        </div>
       </div>
     </>
   );

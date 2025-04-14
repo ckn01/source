@@ -142,6 +142,22 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
   );
 };
 
+type FilterItem = {
+  [key: string]: {
+    value: string;
+    operator: "equal" | "contains";
+  };
+};
+
+type FiltersState = [{
+  filter_item: FilterItem;
+}];
+
+type FilterBuilderProps = {
+  filters: FiltersState;
+  setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
+};
+
 export default function DynamicPage() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode, viewContentCode } = params;
@@ -180,28 +196,33 @@ export default function DynamicPage() {
     },
   ]);
 
+  const availableFields = ["status", "bentuk", "provinsi", "kabupaten", "jenjang"];
+  const [selectedField, setSelectedField] = useState("");
+  const currentFields = Object.keys(filters[0].filter_item);
+  const remainingFields = availableFields.filter((field) => !currentFields.includes(field));
+
   const addField = () => {
-    const newFieldKey = prompt("Enter field name (e.g., status, bentuk, etc):");
-    if (!newFieldKey) return;
+    if (!selectedField) return;
     setFilters((prev) => {
       const updated = { ...prev[0] };
-      updated.filter_item[newFieldKey] = { value: "", operator: "equal" };
+      updated.filter_item[selectedField] = { value: "", operator: "equal" };
+      return [updated];
+    });
+    setSelectedField(""); // reset dropdown after add
+  };
+
+  const updateField = (field: string, key: "value" | "operator", value: string) => {
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      updated.filter_item[field][key] = value;
       return [updated];
     });
   };
 
-  const updateField = (fieldName: string, key: string, newVal: string) => {
+  const deleteField = (field: string) => {
     setFilters((prev) => {
       const updated = { ...prev[0] };
-      updated.filter_item[fieldName][key as 'value' | 'operator'] = newVal;
-      return [updated];
-    });
-  };
-
-  const deleteField = (fieldName: string) => {
-    setFilters((prev) => {
-      const updated = { ...prev[0] };
-      delete updated.filter_item[fieldName];
+      delete updated.filter_item[field];
       return [updated];
     });
   };
@@ -327,42 +348,61 @@ export default function DynamicPage() {
 
                     {/* The SidebarPanel */}
                     <SidebarPanel isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
-                      <div className="p-4 space-y-4">
-                        <h2 className="text-lg font-semibold">Dynamic Filter</h2>
-                        {Object.entries(filters[0].filter_item).map(([field, config]) => (
-                          <div key={field} className="flex items-center gap-2">
-                            <div className="w-1/4 text-sm font-medium text-gray-700">{field}</div>
+                      <div className="p-2 space-y-4">
+                        {/* Dropdown Add Field */}
+                        {remainingFields.length > 0 && (
+                          <div className="flex items-center gap-2">
                             <select
-                              className="border rounded px-2 py-1 text-sm"
-                              value={(config as { value: string; operator: string }).operator}
-                              onChange={(e) => updateField(field, "operator", e.target.value)}
+                              className="flex-1 border rounded px-3 py-3 text-sm rounded-lg"
+                              value={selectedField}
+                              onChange={(e) => setSelectedField(e.target.value)}
                             >
-                              <option value="equal">equal</option>
-                              <option value="contains">contains</option>
+                              <option value="">-- Select field to add --</option>
+                              {remainingFields.map((field) => (
+                                <option key={field} value={field}>
+                                  {field}
+                                </option>
+                              ))}
                             </select>
-                            <input
-                              className="border rounded px-2 py-1 text-sm w-1/2"
-                              placeholder="value"
-                              value={(config as { value: string; operator: string }).value}
-                              onChange={(e) => updateField(field, "value", e.target.value)}
-                            />
                             <button
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => deleteField(field)}
+                              className="shrink-0 px-3 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm"
+                              onClick={addField}
                             >
-                              🗑️
+                              ➕ Add Field
                             </button>
                           </div>
-                        ))}
 
-                        <div>
-                          <button
-                            onClick={addField}
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            + Add Filter Field
-                          </button>
-                        </div>
+                        )}
+
+                        <Card>
+                          <CardContent>
+                            {Object.entries(filters[0].filter_item).map(([field, config]) => (
+                              <div key={field} className="flex items-center gap-2">
+                                <div className="w-1/4 text-sm font-medium text-gray-700">{field}</div>
+                                <select
+                                  className="border rounded px-3 py-3 text-sm rounded-lg"
+                                  value={config.operator}
+                                  onChange={(e) => updateField(field, "operator", e.target.value)}
+                                >
+                                  <option value="equal">equal</option>
+                                  <option value="contains">contains</option>
+                                </select>
+                                <input
+                                  className="border rounded px-3 py-3 text-sm w-1/2 rounded-lg"
+                                  placeholder="value"
+                                  value={config.value}
+                                  onChange={(e) => updateField(field, "value", e.target.value)}
+                                />
+                                <button
+                                  className="text-red-500 hover:text-red-700 cursor-pointer"
+                                  onClick={() => deleteField(field)}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
 
                         <div className="flex justify-end gap-2 pt-4">
                           <button
@@ -371,12 +411,56 @@ export default function DynamicPage() {
                           >
                             <XCircle size={18} /> Cancel
                           </button>
+
                           <button
                             onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
-                            className="px-4 flex items-center gap-2 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 shadow-md cursor-pointer"
+                            className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 shadow-md cursor-pointer"
                           >
                             <CheckCircle size={18} /> Apply
                           </button>
+                          {/* <button
+                            onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
+                            className="px-4 flex items-center gap-2 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 shadow-md cursor-pointer"
+                          >
+                            <CheckCircle size={18} /> Apply and Close
+                          </button> */}
+
+                          {/* <div className="relative inline-flex shadow-md rounded-lg overflow-hidden">
+                            
+                            <button
+                              onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
+                              className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white hover:bg-cyan-600"
+                            >
+                              <CheckCircle size={18} /> Apply
+                            </button>
+
+                            
+                            <button
+                              onClick={() => {
+                                setOpen(!open)
+                              }}
+                              className="px-2 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            >
+                              <ChevronDown size={18} />
+                            </button>
+
+                            
+                            {open && (
+                              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-lg z-12">
+                                <button
+                                  onClick={() => {
+                                    console.log(JSON.stringify({ filters }, null, 2));
+                                    // You can add any extra logic like closing modal here
+                                    setOpen(false);
+                                  }}
+                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <CheckCircle size={18} className="text-cyan-600" />
+                                  Apply and Close
+                                </button>
+                              </div>
+                            )}
+                          </div> */}
                         </div>
                       </div>
                     </SidebarPanel>
