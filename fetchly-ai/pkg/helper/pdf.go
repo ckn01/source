@@ -8,29 +8,31 @@ import (
 	"rsc.io/pdf"
 )
 
-func extractTextFromPDF(path string) (string, error) {
+func ExtractTextFromPDF(path string) (string, error) {
 	r, err := pdf.Open(path)
 	if err != nil {
 		return "", err
 	}
 
 	var sb strings.Builder
-	for i := 0; i < r.NumPage(); i++ {
-		page := r.Page(i)
+	numPage := r.NumPage()
+
+	for i := range numPage {
+		page := r.Page(i + 1)
 		if page.V.IsNull() {
 			continue
 		}
 		content := page.Content()
 		for _, text := range content.Text {
 			sb.WriteString(text.S)
-			sb.WriteString(" ")
+			sb.WriteString("")
 		}
 	}
 
 	return sb.String(), nil
 }
 
-func chunkByKeywords(text string, keywords []string) []string {
+func ChunkByKeywords(text string, keywords []string) []string {
 	// Build regex to match any keyword as a word boundary
 	joined := strings.Join(keywords, "|")
 	re := regexp.MustCompile(fmt.Sprintf(`(?i)\b(%s)\b`, joined))
