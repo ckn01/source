@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cerkas/cerkas-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/config"
 	"github.com/gomodule/redigo/redis"
 )
 

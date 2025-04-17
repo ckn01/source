@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/cerkas/cerkas-backend/core/entity"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
 )
 
 func HandleSingleRow(columnsList []map[string]interface{}, rows *sql.Rows, request entity.CatalogQuery) (item map[string]entity.DataItem, err error) {

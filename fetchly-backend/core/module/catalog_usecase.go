@@ -8,9 +8,9 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/core/entity"
-	"github.com/cerkas/cerkas-backend/core/repository"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
+	"github.com/fetchlydev/source/fetchly-backend/core/repository"
 )
 
 type CatalogUsecase interface {

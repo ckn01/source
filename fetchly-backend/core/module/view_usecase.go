@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/core/entity"
-	"github.com/cerkas/cerkas-backend/core/repository"
-	"github.com/cerkas/cerkas-backend/pkg/helper"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
+	"github.com/fetchlydev/source/fetchly-backend/core/repository"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/helper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/pkg/helper"
-	"github.com/cerkas/cerkas-backend/repository/util"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/helper"
+	"github.com/fetchlydev/source/fetchly-backend/repository/util"
 	"gorm.io/gorm"
 
-	"github.com/cerkas/cerkas-backend/core/entity"
-	repository_intf "github.com/cerkas/cerkas-backend/core/repository"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
+	repository_intf "github.com/fetchlydev/source/fetchly-backend/core/repository"
 )
 
 type repository struct {

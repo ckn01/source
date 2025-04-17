@@ -4,12 +4,12 @@ package middleware
 import (
 	"strings"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/core/module"
-	"github.com/cerkas/cerkas-backend/handler/api"
-	"github.com/cerkas/cerkas-backend/pkg/conn"
-	catalogrepository "github.com/cerkas/cerkas-backend/repository/catalog_repository"
-	viewrepository "github.com/cerkas/cerkas-backend/repository/view_repository"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/core/module"
+	"github.com/fetchlydev/source/fetchly-backend/handler/api"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/conn"
+	catalogrepository "github.com/fetchlydev/source/fetchly-backend/repository/catalog_repository"
+	viewrepository "github.com/fetchlydev/source/fetchly-backend/repository/view_repository"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

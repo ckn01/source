@@ -1,4 +1,4 @@
-module github.com/cerkas/cerkas-backend
+module github.com/fetchlydev/source/fetchly-backend
 
 go 1.23
 

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/cerkas/cerkas-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/config"
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

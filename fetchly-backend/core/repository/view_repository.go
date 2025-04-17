@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/cerkas/cerkas-backend/core/entity"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
 )
 
 type ViewRepository interface {

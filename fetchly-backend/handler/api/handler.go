@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/core/entity"
-	"github.com/cerkas/cerkas-backend/core/module"
-	"github.com/cerkas/cerkas-backend/pkg/helper"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/core/entity"
+	"github.com/fetchlydev/source/fetchly-backend/core/module"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/helper"
 	"github.com/gin-gonic/gin"
 )
 
