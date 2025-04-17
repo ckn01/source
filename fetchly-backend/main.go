@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cerkas/cerkas-backend/config"
-	"github.com/cerkas/cerkas-backend/handler/middleware"
-	"github.com/cerkas/cerkas-backend/pkg/conn"
+	"github.com/fetchlydev/source/fetchly-backend/config"
+	"github.com/fetchlydev/source/fetchly-backend/handler/middleware"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/conn"
 )
 
 func main() {
-	log.Printf("initialate cerkas-backend")
+	log.Printf("initialate fetchly-backend")
 
 	cfg := config.Get()
 

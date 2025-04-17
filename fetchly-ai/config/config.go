@@ -30,6 +30,19 @@ type Config struct {
 	PDFChunkingKeyword string `envconfig:"PDF_CHUNKING_KEYWORD" default:""`
 
 	InternalSecretKey string `envconfig:"INTERNAL_SECRET_KEY" default:"INTERNAL_SECRET_KEY"`
+
+	GeminiAPIKey          string  `envconfig:"GEMINI_API_KEY" default:"AIzaSyAReXf40rwS8WUSSdG2Uh0mgYrib7ByNjI"`
+	EnableAIChatbot       bool    `envconfig:"ENABLE_AI_CHATBOT" default:"true"`
+	AIChatbotProduct      string  `envconfig:"AI_CHATBOT_PRODUCT" default:"gemini"`
+	AIChatbotModel        string  `envconfig:"AI_CHATBOT_MODEL" default:"gemini-2.0-flash"`
+	AIEmbeddingModel      string  `envconfig:"AI_EMBEDDING_MODEL" default:"text-embedding-004"`
+	AIChatbotKeywordStart string  `envconfig:"AI_CHATBOT_KEYWORD_START" default:"tanya ai"`
+	AIChatbotKeywordStop  string  `envconfig:"AI_CHATBOT_KEYWORD_STOP" default:"stop tanya ai"`
+	AIMaxOutputTokens     int32   `envconfig:"AI_MAX_OUTPUT_TOKENS" default:"2000"`
+	AITemperature         float32 `envconfig:"AI_TEMPERATURE" default:"1"`
+	AITopK                int32   `envconfig:"AI_TOP_K" default:"10"`
+	AITopP                float32 `envconfig:"AI_TOP_P" default:"0.95"`
+	AIDebugMode           bool    `envconfig:"AI_DEBUG_MODE" default:"true"`
 }
 
 func Get() Config {

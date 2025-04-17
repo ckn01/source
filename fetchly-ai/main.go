@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/fetchlydev/source/fetchly-ai/config"
-	"github.com/fetchlydev/source/fetchly-ai/core/module"
-	"github.com/fetchlydev/source/fetchly-ai/pkg/helper"
+	"github.com/fetchlydev/source/fetchly-ai/handler/middleware"
+	"github.com/fetchlydev/source/fetchly-ai/pkg/conn"
 )
 
 func main() {
@@ -14,14 +14,11 @@ func main() {
 
 	cfg := config.Get()
 
-	ragUc := module.NewRAGUsecase(cfg)
+	db := conn.InitDB(&cfg)
+	defer conn.DbClose(db)
 
-	chunks, err := ragUc.ChunkTextIntoSlice("")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for i, chunk := range chunks {
-		fmt.Printf("\n--- Chunk %d ---\n%s\n", i+1, chunk[:helper.Min(1000, len(chunk))])
+	router, _ := middleware.InitRouter(cfg, db)
+	if err := router.Run(":" + cfg.HTTPPort); err != nil {
+		panic(fmt.Errorf("failed to start server: %s", err.Error()))
 	}
 }
