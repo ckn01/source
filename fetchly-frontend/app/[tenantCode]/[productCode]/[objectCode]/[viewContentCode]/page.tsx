@@ -165,6 +165,7 @@ export default function DynamicPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [responseLayout, setResponseLayout] = useState<any>(null);
+  const [navigationLayout, setNavigationLayout] = useState<any>(null);
   const [responseData, setResponseData] = useState<any>(null);
   const [viewContent, setViewContent] = useState<any>(null);
   const [viewLayout, setViewLayout] = useState<any>(null);
@@ -261,6 +262,33 @@ export default function DynamicPage() {
     }
   };
 
+  const fetchNavigation = async () => {
+    try {
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/navigation`,
+        {
+          method: APIMethod.POST,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch layout");
+      }
+
+      const data = await response.json();
+      const navigationData = data.data;
+
+      setNavigationLayout(navigationData);
+    } catch (error) {
+      console.error("Layout API error:", error);
+      setResponseLayout({ error: (error as Error).message });
+    }
+  };
+
   const fetchData = async (layoutData: any, page: number) => {
     try {
       setIsLoading(true)
@@ -308,6 +336,7 @@ export default function DynamicPage() {
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
       fetchLayout();
+      fetchNavigation();
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
 
