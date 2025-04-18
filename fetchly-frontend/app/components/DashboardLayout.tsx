@@ -35,11 +35,14 @@ const menuItems = [
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
   };
+
+  const isSidebarOpen = sidebarWidth > 80;
 
   const SidebarMenu = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -98,7 +101,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside
-        className={`flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-14"}`}
+        style={{ width: sidebarWidth }}
+        className="relative flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300"
       >
         {/* Header */}
         <div className="p-2 pl-3 flex items-center justify-between border-b border-amber-600">
@@ -124,6 +128,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
         </div>
 
+        <div
+          onMouseDown={(e) => {
+            const startX = e.clientX;
+            const startWidth = sidebarWidth;
+
+            const onMouseMove = (e: MouseEvent) => {
+              const newWidth = startWidth + (e.clientX - startX);
+              if (newWidth >= 56 && newWidth <= 400) {
+                setSidebarWidth(newWidth);
+              }
+            };
+
+            const onMouseUp = () => {
+              document.removeEventListener("mousemove", onMouseMove);
+              document.removeEventListener("mouseup", onMouseUp);
+            };
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+          }}
+          className="absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10"
+        >
+          {/* Visual drag indicator */}
+          <div className="h-full w-full flex flex-col items-center justify-center gap-1 group-hover:gap-1.5 transition-all duration-150">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-1.5 h-1.5 bg-white/40 group-hover:bg-white/70 rounded-full"></div>
+            ))}
+          </div>
+        </div>
+
         {/* User Profile */}
         <div className="mt-auto border-t border-amber-600 p-2 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
@@ -137,11 +171,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           )}
         </div>
-      </aside>
+      </aside >
 
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto">
+      < main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto" >
         {/* Optional fixed header inside main */}
         {/* <div className="p-4 border-b bg-gradient-to-r from-amber-900 to-amber-700 text-white shadow z-10">
           <h1 className="text-xl font-semibold">Page Title</h1>
@@ -151,7 +185,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex-1 overflow-auto">
           {children}
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }
