@@ -16,10 +16,6 @@ const menuItems = [
     href: "/",
   },
   {
-    label: "About",
-    href: "/about",
-  },
-  {
     label: "Dynamic Page",
     children: [
       {
@@ -31,12 +27,16 @@ const menuItems = [
         href: "/fetchly/delivery/user_address/default",
       },
     ],
+  },
+  {
+    label: "About",
+    href: "/about",
   }
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  // const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [navigationMenuItems, setNavigationMenuItems] = useState(menuItems);
 
   const toggleSidebar = () => {
     setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
       <ul>
-        {menuItems.map((item) => (
+        {navigationMenuItems.map((item) => (
           <li key={item.label}>
             {item.children ? (
               <div>
@@ -186,6 +186,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </div>
       </main >
-    </div >
+    </div>
   );
 }

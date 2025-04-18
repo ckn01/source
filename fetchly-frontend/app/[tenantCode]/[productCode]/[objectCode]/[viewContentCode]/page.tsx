@@ -447,6 +447,7 @@ export default function DynamicPage() {
                           >
                             <CheckCircle size={18} /> Apply
                           </button>
+
                           {/* <button
                             onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
                             className="px-4 flex items-center gap-2 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 shadow-md cursor-pointer"
