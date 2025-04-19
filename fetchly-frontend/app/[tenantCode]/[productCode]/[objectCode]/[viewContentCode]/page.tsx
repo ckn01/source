@@ -201,6 +201,7 @@ export default function DynamicPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1)
   const [actionButtonOpen, setActionButtonOpen] = useState<boolean[]>([]);
+  const [selectedFieldPerGroup, setSelectedFieldPerGroup] = useState<Record<string, string>>({});
 
   const handlePageClick = (pageIndex: any) => {
     let selectedPage = pageIndex.selected + 1;
@@ -454,6 +455,20 @@ export default function DynamicPage() {
                           <div className="flex items-center gap-2">
                             <select
                               className="flex-1 border rounded px-3 py-3 text-sm rounded-lg"
+                              onChange={(e) => {
+                                setFilters((prev) => {
+                                  let updated = { ...prev[0] };
+                                  updated.operator = e.target.value;
+                                  return [updated];
+                                });
+                              }}
+                            >
+                              <option value="AND">AND &nbsp;&nbsp;</option>
+                              <option value="OR">OR &nbsp;&nbsp;</option>
+                            </select>
+
+                            <select
+                              className="flex-1 border rounded px-3 py-3 text-sm rounded-lg"
                               value={selectedField}
                               onChange={(e) => setSelectedField(e.target.value)}
                             >
@@ -481,56 +496,95 @@ export default function DynamicPage() {
                       </div>
                       <Card className="rounded-lg mt-4 shadow-[0_4px_0_0_rgba(0,0,0,0.4)]">
                         <CardContent>
-                          <select
-                            className="border rounded px-1 py-2 text-sm rounded-lg mb-4 flex"
-                            onChange={(e) => {
-                              setFilters((prev) => {
-                                let updated = { ...prev[0] };
-                                updated.operator = e.target.value;
-                                return [updated];
-                              });
-                            }}
-                          >
-                            <option value="AND">AND &nbsp;&nbsp;</option>
-                            <option value="OR">OR &nbsp;&nbsp;</option>
-                          </select>
-
                           {Object.entries(filters[0].filter_item).map(([field, config]) => {
                             // Handle nested group
                             if ("filter_item" in config) {
                               return (
-                                <div key={field} className="border p-4 rounded mb-2 bg-gray-50">
+                                <div key={field} className="border p-4 rounded mb-4 bg-gray-50">
                                   <div className="mb-2 font-semibold text-gray-800">{field}</div>
-                                  <select
-                                    className="border rounded px-2 py-2 text-sm mb-4"
-                                    value={config.operator}
-                                    onChange={(e) => {
-                                      setFilters((prev) => {
-                                        const updated = { ...prev[0] };
-                                        updated.filter_item[field].operator = e.target.value;
-                                        return [updated];
-                                      });
-                                    }}
-                                  >
-                                    <option value="AND">AND</option>
-                                    <option value="OR">OR</option>
-                                  </select>
 
-                                  {/* Render inner fields recursively */}
+
+                                  {/* Add Field inside Group */}
+                                  <div className="flex items-center gap-2 mt-4">
+                                    {/* Group operator (AND/OR) selector */}
+                                    <select
+                                      className="flex-1 border rounded px-3 py-3 text-sm rounded-lg"
+                                      value={config.operator}
+                                      onChange={(e) => {
+                                        setFilters((prev) => {
+                                          const updated = { ...prev[0] };
+                                          updated.filter_item[field].operator = e.target.value;
+                                          return [updated];
+                                        });
+                                      }}
+                                    >
+                                      <option value="AND">AND</option>
+                                      <option value="OR">OR</option>
+                                    </select>
+
+                                    <select
+                                      className="flex-1 border rounded px-3 py-3 text-sm rounded-lg"
+                                      value={selectedFieldPerGroup[field] || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedFieldPerGroup((prev) => ({
+                                          ...prev,
+                                          [field]: val,
+                                        }));
+                                      }}
+                                    >
+                                      <option value="">-- Select field to add --</option>
+                                      {remainingFields.map((f) => (
+                                        <option key={f.field_code} value={f.field_code}>
+                                          {f.field_name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      className="cursor-pointer shrink-0 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm flex items-center gap-2 shadow-[0_4px_0_0_rgba(0,0,0,0.5)]"
+                                      onClick={() => {
+                                        const selected = selectedFieldPerGroup[field];
+                                        if (!selected) return;
+
+                                        setFilters((prev) => {
+                                          const updated = { ...prev[0] };
+                                          if (
+                                            "filter_item" in updated.filter_item[field] &&
+                                            !(selected in updated.filter_item[field].filter_item)
+                                          ) {
+                                            updated.filter_item[field].filter_item[selected] = {
+                                              operator: "equal",
+                                              value: "",
+                                            };
+                                          }
+                                          return [updated];
+                                        });
+
+                                        setSelectedFieldPerGroup((prev) => ({
+                                          ...prev,
+                                          [field]: "",
+                                        }));
+                                      }}
+                                    >
+                                      <PlusCircle /> Add Field
+                                    </button>
+                                  </div>
+
+                                  {/* Inner fields */}
                                   {Object.entries(config.filter_item).map(([subField, subConfig]) => (
-                                    <div key={subField} className="flex items-center gap-2 mb-2">
+                                    <div key={subField} className="flex items-center gap-2 mb-2 mt-4">
                                       <div className="w-1/4">{subField}</div>
+
+                                      {/* Operator selector */}
                                       <select
                                         value={(subConfig as { operator: string }).operator}
                                         onChange={(e) => {
                                           const newVal = e.target.value;
                                           setFilters((prev) => {
                                             const updated = { ...prev[0] };
-
-                                            if ('filter_item' in updated.filter_item[field]) {
+                                            if ("filter_item" in updated.filter_item[field]) {
                                               updated.filter_item[field].filter_item[subField].operator = newVal;
                                             }
-
                                             return [updated];
                                           });
                                         }}
@@ -538,8 +592,12 @@ export default function DynamicPage() {
                                       >
                                         <option value="equal">Equal</option>
                                         <option value="contains">Contains</option>
-                                        {/* ...other options */}
+                                        <option value="greater_than">Greater Than</option>
+                                        <option value="less_than">Less Than</option>
+                                        {/* ...other ops */}
                                       </select>
+
+                                      {/* Value input */}
                                       <input
                                         className="border px-2 py-2 rounded text-sm"
                                         value={(subConfig as { value: string }).value}
@@ -547,15 +605,29 @@ export default function DynamicPage() {
                                           const newVal = e.target.value;
                                           setFilters((prev) => {
                                             const updated = { ...prev[0] };
-
-                                            if ('filter_item' in updated.filter_item[field]) {
+                                            if ("filter_item" in updated.filter_item[field]) {
                                               updated.filter_item[field].filter_item[subField].value = newVal;
                                             }
-
                                             return [updated];
                                           });
                                         }}
                                       />
+
+                                      {/* Delete subfield button */}
+                                      <button
+                                        onClick={() => {
+                                          setFilters((prev) => {
+                                            const updated = { ...prev[0] };
+                                            if ("filter_item" in updated.filter_item[field]) {
+                                              delete updated.filter_item[field].filter_item[subField];
+                                            }
+                                            return [updated];
+                                          });
+                                        }}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <TrashIcon size={16} />
+                                      </button>
                                     </div>
                                   ))}
                                 </div>
