@@ -119,6 +119,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           if (child.type === "navigation") {
             let navigationItem = child.props.fields;
 
+            if (!navigationItem) {
+              return null;
+            }
+
             return navigationItem.map((item) => {
               const LucideIcon = (Icons[item.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
 

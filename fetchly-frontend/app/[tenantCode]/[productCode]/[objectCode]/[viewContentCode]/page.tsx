@@ -360,7 +360,7 @@ export default function DynamicPage() {
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "table") {
               return (
-                <Card key={index} className="shadow-md pt-0 pb-4">
+                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.4)] pt-0 pb-4">
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
                       <button
@@ -516,13 +516,13 @@ export default function DynamicPage() {
                       setActionButtonOpen={setActionButtonOpen}
                     />
 
-                    <div className="flex justify-end mt-4 mr-4">
+                    <div className="flex justify-end mt-4 mr-4 pb-4">
                       <ReactPaginate
                         containerClassName="flex space-x-2 items-center text-sm"
-                        pageClassName="border px-3 py-1 rounded cursor-pointer"
-                        activeClassName="bg-blue-500 text-white active cursor-pointer"
-                        previousClassName="px-3 py-1 border rounded cursor-pointer"
-                        nextClassName="px-3 py-1 border rounded cursor-pointer"
+                        pageClassName="px-3 py-1 rounded cursor-pointer rounded"
+                        activeClassName="bg-blue-500 text-white active cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        previousClassName="px-3 py-1 border rounded cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        nextClassName="px-3 py-1 border rounded cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         breakClassName="px-3 py-1"
                         disabledClassName="opacity-50 cursor-not-allowed"
                         previousLabel="Prev"
