@@ -91,8 +91,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const data = await response.json();
       const navigationData = data.data;
 
-      console.log("Navigation Data:", navigationData);
-
       setNavigationLayout(navigationData);
     } catch (error) {
       console.error("Layout API error:", error);

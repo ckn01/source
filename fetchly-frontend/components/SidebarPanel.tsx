@@ -19,8 +19,7 @@ export default function SidebarPanel({
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-120 bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+        className={`fixed top-0 right-0 h-full w-144 bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex items-center justify-between p-3 border-b">
           <h1 className="text-2xl font-bold text-cyan-600 mb-1">

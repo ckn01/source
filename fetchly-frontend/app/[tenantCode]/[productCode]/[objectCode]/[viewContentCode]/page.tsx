@@ -5,7 +5,7 @@ import SidebarPanel from "@/components/SidebarPanel";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
-import { CheckCircle, Filter, PlusCircle, XCircle } from "lucide-react";
+import { CheckCircle, Filter, PlusCircle, TrashIcon, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReactPaginate from 'react-paginate';
@@ -107,7 +107,6 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                     return sum + (field.field_name.length * 10 + 40);
                   }, 0);
 
-                  console.log(visibleFields, totalFixedWidth, innerWidth);
                   // If total is less than innerWidth (arbitrary threshold for ~100%), pick first visible field to flex
                   if (totalFixedWidth < innerWidth) {
                     expandableFieldCode = visibleFields[0]?.field_code ?? null;
@@ -223,19 +222,37 @@ export default function DynamicPage() {
     },
   ]);
 
-  const availableFields = ["status", "bentuk", "provinsi", "kabupaten", "jenjang"];
+  const [availableFields, setAvailableFields] = useState<{ field_code: string; field_name: string }[]>([]);
   const [selectedField, setSelectedField] = useState("");
   const currentFields = Object.keys(filters[0].filter_item);
-  const remainingFields = availableFields.filter((field) => !currentFields.includes(field));
+  const remainingFields = availableFields.filter((field) => !currentFields.includes(field.field_code));
 
   const addField = () => {
     if (!selectedField) return;
+
     setFilters((prev) => {
       const updated = { ...prev[0] };
       updated.filter_item[selectedField] = { value: "", operator: "equal" };
       return [updated];
     });
-    setSelectedField(""); // reset dropdown after add
+
+    setSelectedField("");
+
+    console.log("filters", filters);
+  };
+
+  const addGroup = () => {
+
+  };
+
+  const updateOperator = (field: string, value: string) => {
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      updated.filter_item[field].operator = value;
+      return [updated];
+    });
+
+    console.log("filters", filters);
   };
 
   const updateField = (field: string, key: "value" | "operator", value: string) => {
@@ -244,6 +261,8 @@ export default function DynamicPage() {
       updated.filter_item[field][key] = value;
       return [updated];
     });
+
+    console.log("filters", filters);
   };
 
   const deleteField = (field: string) => {
@@ -273,9 +292,29 @@ export default function DynamicPage() {
 
       const data = await response.json();
       const layoutData = data.data;
+
       setResponseLayout(layoutData);
       setViewContent(layoutData.view_content);
       setViewLayout(layoutData.layout);
+
+      // iterate through layout children to find fields
+      const fields = layoutData.fields || [];
+      const is_including_metadata_column = layoutData.layout?.children?.[0]?.props?.is_displaying_metadata_column;
+
+      for (const field of fields) {
+        if (
+          field.field_code &&
+          !availableFields.some(f => f.field_code === field.field_code) &&
+          (is_including_metadata_column || !metadataColumnList.includes(field.field_code))
+        ) {
+          availableFields.push({
+            field_code: field.field_code,
+            field_name: field.field_name,
+          });
+        }
+      }
+
+      setAvailableFields(availableFields);
 
       // setup dynamic page title based on object and tenant
       document.title = `${layoutData.view_content.object.display_name ? layoutData.view_content.object.display_name : toLabel(objectCode)} (${layoutData.view_content.name}) - ${layoutData.view_content.tenant.name}`;
@@ -386,8 +425,9 @@ export default function DynamicPage() {
 
                     {/* The SidebarPanel */}
                     <SidebarPanel isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
-                      <div className="p-2 space-y-4">
-                        {/* Dropdown Add Field */}
+                      <div className="space-x-2 flex items-center justify-end">
+                        {/* here there will be filter UI */}
+
                         {remainingFields.length > 0 && (
                           <div className="flex items-center gap-2">
                             <select
@@ -397,110 +437,91 @@ export default function DynamicPage() {
                             >
                               <option value="">-- Select field to add --</option>
                               {remainingFields.map((field) => (
-                                <option key={field} value={field}>
-                                  {field}
+                                <option key={field.field_code} value={field.field_code}>
+                                  {field.field_name}
                                 </option>
                               ))}
                             </select>
                             <button
-                              className="shrink-0 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm flex items-center gap-2 shadow-[0_4px_0_0_rgba(0,0,0,0.5)]"
+                              className="cursor-pointer shrink-0 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm flex items-center gap-2 shadow-[0_4px_0_0_rgba(0,0,0,0.5)]"
                               onClick={addField}
                             >
                               <PlusCircle /> Add Field
                             </button>
+                            <button
+                              className="cursor-pointer shrink-0 px-4 py-2 bg-cyan-700 text-white rounded-lg hover:bg-cyan-800 text-sm flex items-center gap-2 shadow-[0_4px_0_0_rgba(0,0,0,0.5)]"
+                              onClick={addGroup}
+                            >
+                              <PlusCircle /> Add Group
+                            </button>
                           </div>
-
                         )}
+                      </div>
+                      <Card className="rounded-lg mt-4 shadow-[0_4px_0_0_rgba(0,0,0,0.4)]">
+                        <CardContent>
+                          <select
+                            className="border rounded px-1 py-2 text-sm rounded-lg mb-4 flex"
+                            onChange={(e) => {
+                              setFilters((prev) => {
+                                let updated = { ...prev[0] };
+                                updated.operator = e.target.value;
+                                return [updated];
+                              });
+                            }}
+                          >
+                            <option value="AND">AND &nbsp;&nbsp;</option>
+                            <option value="OR">OR &nbsp;&nbsp;</option>
+                          </select>
 
-                        <Card>
-                          <CardContent>
-                            {Object.entries(filters[0].filter_item).map(([field, config]) => (
-                              <div key={field} className="flex items-center gap-2">
-                                <div className="w-1/4 text-sm font-medium text-gray-700">{field}</div>
-                                <select
-                                  className="border rounded px-3 py-3 text-sm rounded-lg"
-                                  value={config.operator}
-                                  onChange={(e) => updateField(field, "operator", e.target.value)}
-                                >
-                                  <option value="equal">equal</option>
-                                  <option value="contains">contains</option>
-                                </select>
-                                <input
-                                  className="border rounded px-3 py-3 text-sm w-1/2 rounded-lg"
-                                  placeholder="value"
-                                  value={config.value}
-                                  onChange={(e) => updateField(field, "value", e.target.value)}
-                                />
-                                <button
-                                  className="text-red-500 hover:text-red-700 cursor-pointer"
-                                  onClick={() => deleteField(field)}
-                                >
-                                  🗑️
-                                </button>
+                          {Object.entries(filters[0].filter_item).map(([field, config]) => (
+                            <div key={field} className="flex items-center gap-2">
+                              <div className="w-1/4 text-md font-medium text-gray-700 border rounded-md px-3 py-3 mb-2 text-sm">
+                                {field}
                               </div>
-                            ))}
-                          </CardContent>
-                        </Card>
+                              <select
+                                className="border rounded px-3 py-3 mb-2 text-sm rounded-lg"
+                                value={config.operator}
+                                onChange={(e) => updateOperator(field, e.target.value)}
+                              >
+                                <option value="equal">Equal</option>
+                                <option value="contains">Contains</option>
+                                <option value="greater_than">Greater Than</option>
+                                <option value="greater_than_equal">Greater Than or Equal</option>
+                                <option value="less_than">Less Than</option>
+                                <option value="less_than_equal">Less Than or Equal</option>
+                                <option value="empty">Empty</option>
+                                <option value="not_empty">Not Empty</option>
+                              </select>
+                              <input
+                                className="border rounded px-3 py-3 mb-2 text-sm w-1/2 rounded-lg"
+                                placeholder="value"
+                                value={config.value}
+                                onChange={(e) => updateField(field, "value", e.target.value)}
+                              />
+                              <button
+                                className="text-red-500 hover:text-red-700 cursor-pointer"
+                                onClick={() => deleteField(field)}
+                              >
+                                <TrashIcon size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                      <div className="flex justify-end gap-2 pt-4">
+                        <button
+                          onClick={() => setIsSidebarOpen(false)}
+                          className="px-4 flex items-center py-2 gap-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        >
+                          <XCircle size={18} /> Cancel
+                        </button>
 
-                        <div className="flex justify-end gap-2 pt-4">
-                          <button
-                            onClick={() => setIsSidebarOpen(false)}
-                            className="px-4 flex items-center py-2 gap-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                          >
-                            <XCircle size={18} /> Cancel
-                          </button>
-
-                          <button
-                            onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
-                            className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                          >
-                            <CheckCircle size={18} /> Apply
-                          </button>
-
-                          {/* <button
-                            onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
-                            className="px-4 flex items-center gap-2 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 shadow-md cursor-pointer"
-                          >
-                            <CheckCircle size={18} /> Apply and Close
-                          </button> */}
-
-                          {/* <div className="relative inline-flex shadow-md rounded-lg overflow-hidden">
-                            
-                            <button
-                              onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
-                              className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white hover:bg-cyan-600"
-                            >
-                              <CheckCircle size={18} /> Apply
-                            </button>
-
-                            
-                            <button
-                              onClick={() => {
-                                setOpen(!open)
-                              }}
-                              className="px-2 bg-cyan-500 hover:bg-cyan-600 text-white"
-                            >
-                              <ChevronDown size={18} />
-                            </button>
-
-                            
-                            {open && (
-                              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-lg z-12">
-                                <button
-                                  onClick={() => {
-                                    console.log(JSON.stringify({ filters }, null, 2));
-                                    // You can add any extra logic like closing modal here
-                                    setOpen(false);
-                                  }}
-                                  className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <CheckCircle size={18} className="text-cyan-600" />
-                                  Apply and Close
-                                </button>
-                              </div>
-                            )}
-                          </div> */}
-                        </div>
+                        <button
+                          onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
+                          className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        >
+                          <CheckCircle size={18} /> Apply
+                        </button>
                       </div>
                     </SidebarPanel>
 
@@ -519,10 +540,10 @@ export default function DynamicPage() {
                     <div className="flex justify-end mt-4 mr-4 pb-4">
                       <ReactPaginate
                         containerClassName="flex space-x-2 items-center text-sm"
-                        pageClassName="px-3 py-1 rounded cursor-pointer rounded"
-                        activeClassName="bg-blue-500 text-white active cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        previousClassName="px-3 py-1 border rounded cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        nextClassName="px-3 py-1 border rounded cursor-pointer rounded shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        pageClassName="px-3 py-1 rounded cursor-pointer rounded-md border"
+                        activeClassName="bg-blue-500 text-white active cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        previousClassName="px-3 py-1 border rounded cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        nextClassName="px-3 py-1 border rounded cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         breakClassName="px-3 py-1"
                         disabledClassName="opacity-50 cursor-not-allowed"
                         previousLabel="Prev"
