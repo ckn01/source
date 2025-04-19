@@ -1,6 +1,7 @@
 "use client"; // Client component for interactivity
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -114,27 +115,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             let navigationItem = child.props.fields;
 
             return navigationItem.map((item) => {
+              const LucideIcon = Icons[item.icon] || Icons.Circle;
+
               return (
                 <li key={item.code}>
                   {item.children.length > 0 ? (
                     <div>
                       <button
                         onClick={() => toggleExpand(item.label)}
-                        className={`w-full flex items-center justify-between p-2 pl-3 hover:bg-amber-600 transition transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
+                        className={`w-full flex items-center justify-between p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"
+                          }`}
                       >
-                        <span>{isSidebarOpen ? item.title : item.title.charAt(0)}</span>
+                        <span className="flex items-center gap-x-2">
+                          <LucideIcon className="w-5 h-5" />
+                          {isSidebarOpen ? item.title : item.title.charAt(0)}
+                        </span>
                         {isSidebarOpen && (
-                          <span>{expanded[item.title] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+                          <span>
+                            {expanded[item.title] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </span>
                         )}
                       </button>
                       {expanded[item.label] && (
-                        <ul className="p-2">
+                        <ul className="pl-0">
                           {item.children.map((child: { title: string; url: string }) => (
                             <li key={child.title}>
                               <Link
                                 href={`/${tenantCode}/${productCode}/${child.url}`}
-                                className="block p-2 pl-3 text-sm hover:bg-amber-600 transition-colors"
+                                className="flex items-center gap-x-2 p-4 pl-8 hover:bg-amber-600 transition-colors text-base text-amber-100"
                               >
+                                <LucideIcon className="w-5 h-5" />
                                 {isSidebarOpen ? child.title : child.title.charAt(0)}
                               </Link>
                             </li>
@@ -145,8 +155,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   ) : (
                     <Link
                       href={`/${tenantCode}/${productCode}/${item.url}`}
-                      className={`block p-2 pl-3 hover:bg-amber-600 transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
+                      className={`flex items-center gap-x-2 p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"}`}
                     >
+                      <LucideIcon className="w-5 h-5" />
                       {isSidebarOpen ? item.title : item.title.charAt(0)}
                     </Link>
                   )}
@@ -225,7 +236,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto">
-          <nav className="mt-2">
+          <nav className="mt-2 bg-amber-800">
             <SidebarMenu isSidebarOpen={isSidebarOpen} />
           </nav>
         </div>
