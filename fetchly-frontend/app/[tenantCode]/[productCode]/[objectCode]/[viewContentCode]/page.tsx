@@ -500,9 +500,22 @@ export default function DynamicPage() {
                             // Handle nested group
                             if ("filter_item" in config) {
                               return (
-                                <div key={field} className="border p-4 rounded mb-4 bg-gray-50">
-                                  <div className="mb-2 font-semibold text-gray-800">{field}</div>
-
+                                <div key={field} className="border p-4 rounded-md mb-4 bg-gray-50">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="font-semibold text-gray-800">{field}</div>
+                                    <button
+                                      onClick={() => {
+                                        setFilters((prev) => {
+                                          const updated = { ...prev[0] };
+                                          delete updated.filter_item[field];
+                                          return [updated];
+                                        });
+                                      }}
+                                      className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+                                    >
+                                      <TrashIcon size={16} /> Remove Group
+                                    </button>
+                                  </div>
 
                                   {/* Add Field inside Group */}
                                   <div className="flex items-center gap-2 mt-4">
@@ -572,8 +585,8 @@ export default function DynamicPage() {
 
                                   {/* Inner fields */}
                                   {Object.entries(config.filter_item).map(([subField, subConfig]) => (
-                                    <div key={subField} className="flex items-center gap-2 mb-2 mt-4">
-                                      <div className="w-1/4">{subField}</div>
+                                    <div key={subField} className="flex items-center gap-2 mb-2 mt-4 rounded-md">
+                                      <div className="w-1/4 border rounded px-3 py-3 mb-2 text-sm rounded-lg">{subField}</div>
 
                                       {/* Operator selector */}
                                       <select
@@ -588,7 +601,7 @@ export default function DynamicPage() {
                                             return [updated];
                                           });
                                         }}
-                                        className="border rounded px-2 py-2 text-sm"
+                                        className="border rounded px-3 py-3 mb-2 text-sm rounded-lg"
                                       >
                                         <option value="equal">Equal</option>
                                         <option value="contains">Contains</option>
@@ -599,7 +612,7 @@ export default function DynamicPage() {
 
                                       {/* Value input */}
                                       <input
-                                        className="border px-2 py-2 rounded text-sm"
+                                        className="flex-1 border rounded px-3 py-3 mb-2 text-sm rounded-lg"
                                         value={(subConfig as { value: string }).value}
                                         onChange={(e) => {
                                           const newVal = e.target.value;
