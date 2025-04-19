@@ -2,9 +2,10 @@
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import SidebarPanel from "@/components/SidebarPanel";
+import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
-import { CheckCircle, Filter, XCircle } from "lucide-react";
+import { CheckCircle, Filter, PlusCircle, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReactPaginate from 'react-paginate';
@@ -42,21 +43,33 @@ interface DynamicTableProps {
   currentPage?: number;
   totalPages?: number;
   loading?: boolean;
+  actionButtonOpen: boolean[];
+  setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
 }
 
-const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading }: DynamicTableProps) => {
+const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading, actionButtonOpen, setActionButtonOpen }: DynamicTableProps) => {
   return (
-    <div className="relative overflow-x-auto">
-      <div className="relative">
+    <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
+      <div className="relative h-full">
         {loading && (
           <div className="absolute top-0 left-0 w-full h-full bg-white/60 flex items-center justify-center z-10">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
         )}
 
-        <table className="table-auto border border-gray-100 whitespace-nowrap">
+        <table className="table-auto h-full border border-gray-100 whitespace-nowrap">
           <thead>
             <tr className="bg-gray-100">
+              <th
+                key={"action-column"}
+                className="px-2 py-2 border border-gray-100 text-left"
+                style={{
+                  minWidth: `48px`,
+                }}
+              >
+
+              </th>
+
               {fields.map((field) => {
                 if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
                   return null; // skip rendering this column
@@ -93,14 +106,25 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                     return sum + (field.field_name.length * 10 + 40);
                   }, 0);
 
-                  // If total is less than 1000px (arbitrary threshold for ~100%), pick first visible field to flex
-                  if (totalFixedWidth < 1000) {
+                  console.log(visibleFields, totalFixedWidth, window.innerWidth);
+                  // If total is less than window.innerWidth (arbitrary threshold for ~100%), pick first visible field to flex
+                  if (totalFixedWidth < window.innerWidth) {
                     expandableFieldCode = visibleFields[0]?.field_code ?? null;
                   }
                 }
 
                 return (
                   <tr key={rowIndex}>
+                    <td
+                      key={"action-item-column"}
+                      className="px-2 py-2 border border-gray-100 text-gray-600"
+                      style={{
+                        minWidth: `48px`
+                      }}
+                    >
+                      <ActionMenuButton />
+                    </td>
+
                     {fields.map((field) => {
                       if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
                         return null; // skip rendering this column
@@ -165,7 +189,6 @@ export default function DynamicPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [responseLayout, setResponseLayout] = useState<any>(null);
-  const [navigationLayout, setNavigationLayout] = useState<any>(null);
   const [responseData, setResponseData] = useState<any>(null);
   const [viewContent, setViewContent] = useState<any>(null);
   const [viewLayout, setViewLayout] = useState<any>(null);
@@ -176,6 +199,7 @@ export default function DynamicPage() {
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1)
+  const [actionButtonOpen, setActionButtonOpen] = useState<boolean[]>([]);
 
   const handlePageClick = (pageIndex: any) => {
     let selectedPage = pageIndex.selected + 1;
@@ -262,33 +286,6 @@ export default function DynamicPage() {
     }
   };
 
-  const fetchNavigation = async () => {
-    try {
-      const response = await fetch(
-        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/navigation`,
-        {
-          method: APIMethod.POST,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({}),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch layout");
-      }
-
-      const data = await response.json();
-      const navigationData = data.data;
-
-      setNavigationLayout(navigationData);
-    } catch (error) {
-      console.error("Layout API error:", error);
-      setResponseLayout({ error: (error as Error).message });
-    }
-  };
-
   const fetchData = async (layoutData: any, page: number) => {
     try {
       setIsLoading(true)
@@ -336,7 +333,6 @@ export default function DynamicPage() {
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
       fetchLayout();
-      fetchNavigation();
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
 
@@ -356,16 +352,25 @@ export default function DynamicPage() {
           {viewContent?.object?.display_name ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})` : toLabel(objectCode)}
         </h1>
 
-
         <div className="space-y-4">
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "table") {
               return (
                 <Card key={index} className="shadow-md pt-0 pb-4">
                   <CardContent className="p-0 pb-0 overflow-x-auto">
-                    <div className="flex justify-end gap-2 mb-2">
+                    <div className="flex justify-end gap-0 mb-2">
                       <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition shadow-md"
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        onClick={() => {
+                          console.log("add new item")
+                        }}
+                      >
+                        <PlusCircle size={18} />
+                        Add New {toLabel(objectCode)}
+                      </button>
+
+                      <button
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {
                           setIsSidebarOpen(true);
                         }}
@@ -394,10 +399,10 @@ export default function DynamicPage() {
                               ))}
                             </select>
                             <button
-                              className="shrink-0 px-3 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm"
+                              className="shrink-0 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 text-sm flex items-center gap-2 shadow-[0_4px_0_0_rgba(0,0,0,0.5)]"
                               onClick={addField}
                             >
-                              ➕ Add Field
+                              <PlusCircle /> Add Field
                             </button>
                           </div>
 
@@ -436,14 +441,14 @@ export default function DynamicPage() {
                         <div className="flex justify-end gap-2 pt-4">
                           <button
                             onClick={() => setIsSidebarOpen(false)}
-                            className="px-4 flex items-center py-2 gap-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-md cursor-pointer"
+                            className="px-4 flex items-center py-2 gap-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                           >
                             <XCircle size={18} /> Cancel
                           </button>
 
                           <button
                             onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
-                            className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 shadow-md cursor-pointer"
+                            className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                           >
                             <CheckCircle size={18} /> Apply
                           </button>
@@ -502,6 +507,8 @@ export default function DynamicPage() {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       loading={isLoading}
+                      actionButtonOpen={actionButtonOpen}
+                      setActionButtonOpen={setActionButtonOpen}
                     />
 
                     <div className="flex justify-end mt-4 mr-4">
@@ -616,6 +623,6 @@ export default function DynamicPage() {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }

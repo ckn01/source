@@ -1,14 +1,32 @@
 "use client"; // Client component for interactivity
 
+import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { ReactNode, useState } from "react";
-import { dashboardConfig } from "../appConfig";
+import { useParams } from "next/navigation";
+import { ReactNode, useEffect, useState } from "react";
 
 // Props for the DashboardLayout component
 interface DashboardLayoutProps {
   children: ReactNode;
 }
+
+interface RouteParams {
+  tenantCode: string;
+  productCode: string;
+  objectCode: string;
+  viewContentCode: string;
+  [key: string]: string | string[];
+}
+
+type ViewChild = {
+  type: string;
+  class_name?: string;
+  props: {
+    fields: any[];
+    is_displaying_metadata_column?: Boolean;
+  };
+};
 
 const menuItems = [
   {
@@ -35,14 +53,52 @@ const menuItems = [
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const params = useParams<RouteParams>();
+  const { tenantCode, productCode, objectCode, viewContentCode } = params;
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [navigationMenuItems, setNavigationMenuItems] = useState(menuItems);
+  const [navigationLayout, setNavigationLayout] = useState<any>(null);
 
   const toggleSidebar = () => {
     setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
   };
 
   const isSidebarOpen = sidebarWidth > 80;
+
+  const fetchNavigation = async () => {
+    try {
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/navigation`,
+        {
+          method: APIMethod.POST,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch layout");
+      }
+
+      const data = await response.json();
+      const navigationData = data.data;
+
+      console.log("Navigation Data:", navigationData);
+
+      setNavigationLayout(navigationData);
+    } catch (error) {
+      console.error("Layout API error:", error);
+      setNavigationLayout({ error: (error as Error).message });
+    }
+  };
+
+  useEffect(() => {
+    if (tenantCode && productCode && objectCode && viewContentCode) {
+      fetchNavigation();
+    }
+  }, [tenantCode, productCode, objectCode, viewContentCode]);
 
   const SidebarMenu = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -53,21 +109,67 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
       <ul>
-        {navigationMenuItems.map((item) => (
+        {navigationLayout?.layout?.children.map((child: ViewChild, index: number) => {
+          if (child.type === "navigation") {
+            let navigationItem = child.props.fields;
+
+            return navigationItem.map((item) => {
+              return (
+                <li key={item.code}>
+                  {item.children.length > 0 ? (
+                    <div>
+                      <button
+                        onClick={() => toggleExpand(item.label)}
+                        className={`w-full flex items-center justify-between p-2 pl-3 hover:bg-amber-600 transition transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
+                      >
+                        <span>{isSidebarOpen ? item.title : item.title.charAt(0)}</span>
+                        {isSidebarOpen && (
+                          <span>{expanded[item.title] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+                        )}
+                      </button>
+                      {expanded[item.label] && (
+                        <ul className="p-2">
+                          {item.children.map((child: { title: string; url: string }) => (
+                            <li key={child.title}>
+                              <Link
+                                href={`/${tenantCode}/${productCode}/${child.url}`}
+                                className="block p-2 pl-3 text-sm hover:bg-amber-600 transition-colors"
+                              >
+                                {isSidebarOpen ? child.title : child.title.charAt(0)}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/${tenantCode}/${productCode}/${item.url}`}
+                      className={`block p-2 pl-3 hover:bg-amber-600 transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
+                    >
+                      {isSidebarOpen ? item.title : item.title.charAt(0)}
+                    </Link>
+                  )}
+                </li>
+              )
+            })
+          }
+        })}
+
+        {/* {navigationMenuItems.map((item) => (
           <li key={item.label}>
             {item.children ? (
               <div>
                 <button
                   onClick={() => toggleExpand(item.label)}
-                  className={`w-full flex items-center justify-between p-2 pl-3 hover:bg-amber-600 transition-colors ${isSidebarOpen ? "text-left" : "text-center"
-                    }`}
+                  className={`w-full flex items-center justify-between p-2 pl-3 hover:bg-amber-600 transition transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
                 >
                   <span>{isSidebarOpen ? item.label : item.label.charAt(0)}</span>
                   {isSidebarOpen && (
                     <span>{expanded[item.label] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                   )}
                 </button>
-                {expanded[item.label] && isSidebarOpen && (
+                {expanded[item.label] && (
                   <ul className="p-2">
                     {item.children.map((child) => (
                       <li key={child.label}>
@@ -75,7 +177,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           href={child.href}
                           className="block p-2 pl-3 text-sm hover:bg-amber-600 transition-colors"
                         >
-                          {child.label}
+                          {isSidebarOpen ? child.label : child.label.charAt(0)}
                         </Link>
                       </li>
                     ))}
@@ -92,7 +194,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             )}
           </li>
-        ))}
+        ))} */}
       </ul>
     );
   };
@@ -111,7 +213,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors"
+            className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors  shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
           >
             {isSidebarOpen ? (
               <ChevronLeft className="w-4 h-4 text-white" />
