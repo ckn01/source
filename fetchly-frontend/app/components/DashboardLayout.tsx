@@ -2,7 +2,7 @@
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import * as Icons from "lucide-react";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
@@ -55,7 +55,12 @@ const menuItems = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const params = useParams<RouteParams>();
-  const { tenantCode, productCode, objectCode, viewContentCode } = params;
+  const {
+    tenantCode = dashboardConfig.defaultTenantCode,
+    productCode = dashboardConfig.defaultProductCode,
+    objectCode = dashboardConfig.defaultObjectCode,
+    viewContentCode = dashboardConfig.defaultViewContentCode,
+  } = params;
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [navigationMenuItems, setNavigationMenuItems] = useState(menuItems);
   const [navigationLayout, setNavigationLayout] = useState<any>(null);
@@ -115,7 +120,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             let navigationItem = child.props.fields;
 
             return navigationItem.map((item) => {
-              const LucideIcon = Icons[item.icon] || Icons.Circle;
+              const LucideIcon = (Icons[item.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
 
               return (
                 <li key={item.code}>
@@ -218,9 +223,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         className="relative flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300"
       >
         {/* Header */}
-        <div className="p-2 pl-3 flex items-center justify-between border-b border-amber-600">
+        <div className="p-4 pl-3 flex items-center justify-between border-b border-amber-600">
           {isSidebarOpen && (
-            <h2 className="text-2xl font-semibold tracking-wide">{dashboardConfig.title}</h2>
+            <h2 className="text-3xl font-semibold tracking-wide">
+              {dashboardConfig.title}
+            </h2>
           )}
           <button
             onClick={toggleSidebar}

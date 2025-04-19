@@ -43,11 +43,12 @@ interface DynamicTableProps {
   currentPage?: number;
   totalPages?: number;
   loading?: boolean;
+  innerWidth: number;
   actionButtonOpen: boolean[];
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
 }
 
-const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading, actionButtonOpen, setActionButtonOpen }: DynamicTableProps) => {
+const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading, innerWidth, actionButtonOpen, setActionButtonOpen }: DynamicTableProps) => {
   return (
     <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
       <div className="relative h-full">
@@ -106,9 +107,9 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                     return sum + (field.field_name.length * 10 + 40);
                   }, 0);
 
-                  console.log(visibleFields, totalFixedWidth, window.innerWidth);
-                  // If total is less than window.innerWidth (arbitrary threshold for ~100%), pick first visible field to flex
-                  if (totalFixedWidth < window.innerWidth) {
+                  console.log(visibleFields, totalFixedWidth, innerWidth);
+                  // If total is less than innerWidth (arbitrary threshold for ~100%), pick first visible field to flex
+                  if (totalFixedWidth < innerWidth) {
                     expandableFieldCode = visibleFields[0]?.field_code ?? null;
                   }
                 }
@@ -187,6 +188,7 @@ export default function DynamicPage() {
   const { tenantCode, productCode, objectCode, viewContentCode } = params;
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [innerWidth, setInnerWidth] = useState<number | null>(null);
 
   const [responseLayout, setResponseLayout] = useState<any>(null);
   const [responseData, setResponseData] = useState<any>(null);
@@ -334,7 +336,9 @@ export default function DynamicPage() {
     if (tenantCode && productCode && objectCode && viewContentCode) {
       fetchLayout();
     }
-  }, [tenantCode, productCode, objectCode, viewContentCode]);
+
+    setInnerWidth(window.innerWidth);
+  }, [tenantCode, productCode, objectCode, viewContentCode, innerWidth]);
 
   type ViewChild = {
     type: string;
@@ -507,6 +511,7 @@ export default function DynamicPage() {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       loading={isLoading}
+                      innerWidth={innerWidth || 0}
                       actionButtonOpen={actionButtonOpen}
                       setActionButtonOpen={setActionButtonOpen}
                     />
