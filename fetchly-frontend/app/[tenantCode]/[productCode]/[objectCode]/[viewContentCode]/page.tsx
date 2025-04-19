@@ -214,7 +214,7 @@ export default function DynamicPage() {
 
   const [filters, setFilters] = useState<{
     operator: string;
-    filter_item: FilterItem;
+    filter_item: { [key: string]: { value: string; operator: string } | { operator: string; filter_item: any } };
   }[]>([
     {
       operator: "AND",
@@ -242,7 +242,27 @@ export default function DynamicPage() {
   };
 
   const addGroup = () => {
+    setFilters((prev) => {
+      const updated = { ...prev[0] };
+      const filterItem = { ...updated.filter_item };
 
+      // Generate unique group name
+      let groupIndex = 1;
+      let groupKey = `group_${groupIndex}`;
+      while (filterItem[groupKey]) {
+        groupIndex++;
+        groupKey = `group_${groupIndex}`;
+      }
+
+      // Add empty group with same structure
+      filterItem[groupKey] = {
+        operator: "AND",
+        filter_item: {}
+      };
+
+      updated.filter_item = filterItem;
+      return [updated];
+    });
   };
 
   const updateOperator = (field: string, value: string) => {
@@ -258,7 +278,9 @@ export default function DynamicPage() {
   const updateField = (field: string, key: "value" | "operator", value: string) => {
     setFilters((prev) => {
       const updated = { ...prev[0] };
-      updated.filter_item[field][key] = value;
+      if ('value' in updated.filter_item[field] || 'operator' in updated.filter_item[field]) {
+        (updated.filter_item[field] as { value: string; operator: string })[key] = value;
+      }
       return [updated];
     });
 
@@ -399,7 +421,7 @@ export default function DynamicPage() {
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "table") {
               return (
-                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.4)] pt-0 pb-4">
+                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-4">
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
                       <button
@@ -473,39 +495,107 @@ export default function DynamicPage() {
                             <option value="OR">OR &nbsp;&nbsp;</option>
                           </select>
 
-                          {Object.entries(filters[0].filter_item).map(([field, config]) => (
-                            <div key={field} className="flex items-center gap-2">
-                              <div className="w-1/4 text-md font-medium text-gray-700 border rounded-md px-3 py-3 mb-2 text-sm">
-                                {field}
+                          {Object.entries(filters[0].filter_item).map(([field, config]) => {
+                            // Handle nested group
+                            if ("filter_item" in config) {
+                              return (
+                                <div key={field} className="border p-4 rounded mb-2 bg-gray-50">
+                                  <div className="mb-2 font-semibold text-gray-800">{field}</div>
+                                  <select
+                                    className="border rounded px-2 py-2 text-sm mb-4"
+                                    value={config.operator}
+                                    onChange={(e) => {
+                                      setFilters((prev) => {
+                                        const updated = { ...prev[0] };
+                                        updated.filter_item[field].operator = e.target.value;
+                                        return [updated];
+                                      });
+                                    }}
+                                  >
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                  </select>
+
+                                  {/* Render inner fields recursively */}
+                                  {Object.entries(config.filter_item).map(([subField, subConfig]) => (
+                                    <div key={subField} className="flex items-center gap-2 mb-2">
+                                      <div className="w-1/4">{subField}</div>
+                                      <select
+                                        value={(subConfig as { operator: string }).operator}
+                                        onChange={(e) => {
+                                          const newVal = e.target.value;
+                                          setFilters((prev) => {
+                                            const updated = { ...prev[0] };
+
+                                            if ('filter_item' in updated.filter_item[field]) {
+                                              updated.filter_item[field].filter_item[subField].operator = newVal;
+                                            }
+
+                                            return [updated];
+                                          });
+                                        }}
+                                        className="border rounded px-2 py-2 text-sm"
+                                      >
+                                        <option value="equal">Equal</option>
+                                        <option value="contains">Contains</option>
+                                        {/* ...other options */}
+                                      </select>
+                                      <input
+                                        className="border px-2 py-2 rounded text-sm"
+                                        value={(subConfig as { value: string }).value}
+                                        onChange={(e) => {
+                                          const newVal = e.target.value;
+                                          setFilters((prev) => {
+                                            const updated = { ...prev[0] };
+
+                                            if ('filter_item' in updated.filter_item[field]) {
+                                              updated.filter_item[field].filter_item[subField].value = newVal;
+                                            }
+
+                                            return [updated];
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={field} className="flex items-center gap-2">
+                                <div className="w-1/4 text-md font-medium text-gray-700 border rounded-md px-3 py-3 mb-2 text-sm">
+                                  {field}
+                                </div>
+                                <select
+                                  className="border rounded px-3 py-3 mb-2 text-sm rounded-lg"
+                                  value={config.operator}
+                                  onChange={(e) => updateOperator(field, e.target.value)}
+                                >
+                                  <option value="equal">Equal</option>
+                                  <option value="contains">Contains</option>
+                                  <option value="greater_than">Greater Than</option>
+                                  <option value="greater_than_equal">Greater Than or Equal</option>
+                                  <option value="less_than">Less Than</option>
+                                  <option value="less_than_equal">Less Than or Equal</option>
+                                  <option value="empty">Empty</option>
+                                  <option value="not_empty">Not Empty</option>
+                                </select>
+                                <input
+                                  className="border rounded px-3 py-3 mb-2 text-sm w-1/2 rounded-lg"
+                                  placeholder="value"
+                                  value={"value" in config ? config.value : ""}
+                                  onChange={(e) => updateField(field, "value", e.target.value)}
+                                />
+                                <button
+                                  className="text-red-500 hover:text-red-700 cursor-pointer"
+                                  onClick={() => deleteField(field)}
+                                >
+                                  <TrashIcon size={16} />
+                                </button>
                               </div>
-                              <select
-                                className="border rounded px-3 py-3 mb-2 text-sm rounded-lg"
-                                value={config.operator}
-                                onChange={(e) => updateOperator(field, e.target.value)}
-                              >
-                                <option value="equal">Equal</option>
-                                <option value="contains">Contains</option>
-                                <option value="greater_than">Greater Than</option>
-                                <option value="greater_than_equal">Greater Than or Equal</option>
-                                <option value="less_than">Less Than</option>
-                                <option value="less_than_equal">Less Than or Equal</option>
-                                <option value="empty">Empty</option>
-                                <option value="not_empty">Not Empty</option>
-                              </select>
-                              <input
-                                className="border rounded px-3 py-3 mb-2 text-sm w-1/2 rounded-lg"
-                                placeholder="value"
-                                value={config.value}
-                                onChange={(e) => updateField(field, "value", e.target.value)}
-                              />
-                              <button
-                                className="text-red-500 hover:text-red-700 cursor-pointer"
-                                onClick={() => deleteField(field)}
-                              >
-                                <TrashIcon size={16} />
-                              </button>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </CardContent>
                       </Card>
                       <div className="flex justify-end gap-2 pt-4">

@@ -22,14 +22,14 @@ export default function SidebarPanel({
         className={`fixed top-0 right-0 h-full w-144 bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex items-center justify-between p-3 border-b">
-          <h1 className="text-2xl font-bold text-cyan-600 mb-1">
-            Filter
-          </h1>
+          <h1 className="text-2xl font-bold text-cyan-600 mb-1">Filter</h1>
           <button onClick={onClose}>
             <X className="w-5 h-5 cursor-pointer" />
           </button>
         </div>
-        <div className="p-2">
+
+        {/* Scrollable Content */}
+        <div className="p-2 overflow-y-auto h-[calc(100%-64px)]">
           {children}
         </div>
       </div>
