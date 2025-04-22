@@ -79,7 +79,7 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                 return (
                   <th
                     key={field.field_code}
-                    className="px-2 py-2 border border-gray-100 text-left"
+                    className="px-2 py-4 border border-gray-100 text-left"
                     style={{
                       minWidth: `${field.field_name.length * 10 + 40}px`,
                     }}
@@ -136,7 +136,7 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                       return (
                         <td
                           key={field.field_code}
-                          className="px-2 py-2 border border-gray-100 text-gray-600"
+                          className="px-2 py-4 border border-gray-100 text-gray-600"
                           style={{
                             minWidth: `${rowWidth}px`,
                             ...(isExpandable ? { width: "100%" } : {})
