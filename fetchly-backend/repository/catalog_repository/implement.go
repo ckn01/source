@@ -167,7 +167,7 @@ func (r *repository) GetObjectData(ctx context.Context, request entity.CatalogQu
 	}
 
 	// Get total data count
-	countQuery := r.getTotalCountQuery(ctx, completeTableName, request, joinQueryMap, joinQueryOrder)
+	countQuery := r.getTotalCountQuery(ctx, completeTableName, request, joinQueryMap, joinQueryOrder, columnsList)
 	resultCount, err := r.db.Raw(countQuery).Rows()
 	if err != nil {
 		return resp, err
@@ -178,7 +178,7 @@ func (r *repository) GetObjectData(ctx context.Context, request entity.CatalogQu
 	}
 
 	// Get data with pagination
-	dataQuery := r.getDataWithPagination(ctx, columnsString, completeTableName, request, joinQueryMap, joinQueryOrder)
+	dataQuery := r.getDataWithPagination(ctx, columnsString, completeTableName, request, joinQueryMap, joinQueryOrder, columnsList)
 	rows, err := r.db.Raw(dataQuery).Rows()
 	if err != nil {
 		return resp, err
@@ -306,7 +306,7 @@ func (r *repository) GetDataByRawQuery(ctx context.Context, request entity.Catal
 	return resp, nil
 }
 
-func (r *repository) CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error) {
+func (r *repository) CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error) {
 	// INSERT INTO table_name (column1, column2, column3, ...)
 	// VALUES (value1, value2, value3, ...);
 
@@ -354,12 +354,119 @@ func (r *repository) CreateObjectData(ctx context.Context, request entity.DataMu
 	return resp, nil
 }
 
-func (r *repository) UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error) {
+func (r *repository) UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error) {
 	// UPDATE table_name
 	// SET column1 = value1, column2 = value2, ...
 	// WHERE condition;
 
-	return resp, nil
+	// get list of column from request.ObjectCode
+	columnList, _, _, _, err := r.GetColumnList(ctx, entity.CatalogQuery{
+		ObjectCode:  request.ObjectCode,
+		TenantCode:  request.TenantCode,
+		ProductCode: request.ProductCode,
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	columnListMap := make(map[string]map[string]any)
+	for _, column := range columnList {
+		columnListMap[column[entity.FieldColumnCode].(string)] = column
+	}
+
+	// get mutation data from request
+	mutationData := request.Items
+	mutationDataMap := make(map[string]entity.DataItem)
+	for _, item := range mutationData {
+		mutationDataMap[item.FieldCode] = item
+	}
+
+	// get existing data using serial
+	existingData, err := r.GetObjectDetail(ctx, entity.CatalogQuery{
+		ObjectCode:  request.ObjectCode,
+		TenantCode:  request.TenantCode,
+		ProductCode: request.ProductCode,
+		Serial:      request.Serial,
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	// compare mutationDataMap and existingDataMap using each column code respectively
+	for key, existingItem := range existingData {
+		if existingItem.Value == mutationDataMap[key].Value {
+			// remove from mutationDataMap
+			delete(mutationDataMap, key)
+		}
+	}
+
+	if len(mutationDataMap) == 0 {
+		return resp, entity.ErrorNoUpdateDataFound
+	}
+
+	// compose update query
+	var updateQuery string
+	for key, item := range mutationDataMap {
+		if column, ok := columnListMap[key]; ok {
+			if item.Value == nil {
+				updateQuery = updateQuery + fmt.Sprintf("%v = NULL, ", column[entity.FieldColumnName])
+			} else {
+				switch strings.ToLower(column[entity.FieldDataType].(string)) {
+				case "text", "varchar", "char", "json", "jsonb":
+					updateQuery = updateQuery + fmt.Sprintf("%v = '%v', ", column[entity.FieldColumnName], item.Value)
+				case "integer", "int", "bigint", "smallint":
+					updateQuery = updateQuery + fmt.Sprintf("%v = %v, ", column[entity.FieldColumnName], item.Value)
+				case "boolean", "bool":
+					updateQuery = updateQuery + fmt.Sprintf("%v = %v, ", column[entity.FieldColumnName], item.Value)
+				default:
+					updateQuery = updateQuery + fmt.Sprintf("%v = '%v', ", column[entity.FieldColumnName], item.Value)
+				}
+			}
+		}
+	}
+
+	// remove last comma and space
+	if len(updateQuery) > 0 {
+		updateQuery = updateQuery[:len(updateQuery)-2]
+	}
+
+	// compose where clause
+	identifierColumn := "serial"
+	if !helper.IsUUID(request.Serial) {
+		identifierColumn = "serial"
+	}
+
+	// check if table has updated_at column
+	// if yes, then add updated_at = now() to update query
+	if _, ok := columnListMap["updated_at"]; ok {
+		updateQuery = updateQuery + fmt.Sprintf(", %v = now()", columnListMap["updated_at"][entity.FieldColumnCode])
+	}
+
+	if _, ok := columnListMap["updated_by"]; ok {
+		updateQuery = fmt.Sprintf("%v, %v = '%v'", updateQuery, columnListMap["updated_by"][entity.FieldColumnCode], request.UserSerial)
+	}
+
+	// compose update query
+	completeTableName := request.TenantCode + "." + request.ObjectCode
+	updateQuery = fmt.Sprintf("UPDATE %v SET %v WHERE %v.%v = '%v'", completeTableName, updateQuery, completeTableName, identifierColumn, request.Serial)
+
+	// execute update query
+	if err := r.db.Exec(updateQuery).Error; err != nil {
+		return resp, err
+	}
+
+	// get updated data using serial
+	updatedData, err := r.GetObjectDetail(ctx, entity.CatalogQuery{
+		ObjectCode:  request.ObjectCode,
+		TenantCode:  request.TenantCode,
+		ProductCode: request.ProductCode,
+		Serial:      request.Serial,
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	return updatedData, nil
 }
 
 func (r *repository) DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error) {
@@ -574,7 +681,20 @@ func getSingleData(columnList []map[string]interface{}, columnsString, tableName
 		}
 	}
 
-	query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	// check if table has deleted_at column
+	hasDeletedAt := false
+	for _, column := range columnList {
+		if column[entity.FieldColumnCode] == "deleted_at" {
+			hasDeletedAt = true
+			break
+		}
+	}
+
+	if hasDeletedAt {
+		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	} else {
+		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+	}
 
 	// apply serial to get single data
 	identifierColumn := "serial"
@@ -588,7 +708,7 @@ func getSingleData(columnList []map[string]interface{}, columnsString, tableName
 }
 
 // Main function to get data with pagination, filters, and orders
-func (r *repository) getDataWithPagination(ctx context.Context, columnsString, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string) string {
+func (r *repository) getDataWithPagination(ctx context.Context, columnsString, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string, columnList []map[string]any) string {
 	// Start building the base query
 	query := fmt.Sprintf(`SELECT %v FROM %v`, columnsString, tableName)
 
@@ -609,7 +729,20 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 		}
 	}
 
-	query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	// check if table has deleted_at column
+	hasDeletedAt := false
+	for _, column := range columnList {
+		if column[entity.FieldColumnCode] == "deleted_at" {
+			hasDeletedAt = true
+			break
+		}
+	}
+
+	if hasDeletedAt {
+		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	} else {
+		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+	}
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
@@ -632,7 +765,7 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 	return query
 }
 
-func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string) string {
+func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string, columnList []map[string]any) string {
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM %v`, tableName)
 
 	// integrate join query if any
@@ -654,7 +787,20 @@ func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, r
 		}
 	}
 
-	query += fmt.Sprintf(` WHERE %v.deleted_at IS NULL`, tableName)
+	// check if table has deleted_at column
+	hasDeletedAt := false
+	for _, column := range columnList {
+		if column[entity.FieldColumnCode] == "deleted_at" {
+			hasDeletedAt = true
+			break
+		}
+	}
+
+	if hasDeletedAt {
+		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	} else {
+		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+	}
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {

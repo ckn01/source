@@ -17,8 +17,8 @@ type CatalogUsecase interface {
 	GetObjectData(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error)
 	GetObjectDetail(ctx context.Context, request entity.CatalogQuery, serial string) (resp map[string]entity.DataItem, err error)
 	GetDataByRawQuery(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error)
-	CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error)
-	UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error)
+	CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error)
+	UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error)
 	DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error)
 	GetObjectFieldsByObjectCode(ctx context.Context, request entity.CatalogQuery) (resp map[string]any, err error)
 	GetContentLayoutByKeys(ctx context.Context, request entity.GetViewContentByKeysRequest, catalogQuery entity.CatalogQuery) (resp entity.ViewContentResponse, err error)
@@ -285,18 +285,6 @@ func (uc *catalogUsecase) GetDataByRawQuery(ctx context.Context, request entity.
 	return uc.catalogRepo.GetDataByRawQuery(ctx, request)
 }
 
-func (uc *catalogUsecase) CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error) {
-	return uc.catalogRepo.CreateObjectData(ctx, request)
-}
-
-func (uc *catalogUsecase) UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp entity.CatalogResponse, err error) {
-	return uc.catalogRepo.UpdateObjectData(ctx, request)
-}
-
-func (uc *catalogUsecase) DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error) {
-	return uc.catalogRepo.DeleteObjectData(ctx, request)
-}
-
 func (uc *catalogUsecase) GetContentLayoutByKeys(ctx context.Context, request entity.GetViewContentByKeysRequest, catalogQuery entity.CatalogQuery) (resp entity.ViewContentResponse, err error) {
 	viewContentRecord, err := uc.viewRepo.GetViewContentByKeys(ctx, request)
 	if err != nil {
@@ -489,4 +477,16 @@ func (uc *catalogUsecase) GetContentLayoutByKeys(ctx context.Context, request en
 	}
 
 	return resp, nil
+}
+
+func (uc *catalogUsecase) CreateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error) {
+	return uc.catalogRepo.CreateObjectData(ctx, request)
+}
+
+func (uc *catalogUsecase) UpdateObjectData(ctx context.Context, request entity.DataMutationRequest) (resp map[string]entity.DataItem, err error) {
+	return uc.catalogRepo.UpdateObjectData(ctx, request)
+}
+
+func (uc *catalogUsecase) DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error) {
+	return uc.catalogRepo.DeleteObjectData(ctx, request)
 }

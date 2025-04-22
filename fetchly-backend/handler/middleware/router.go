@@ -41,6 +41,7 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/data/detail/:serial", httpHandler.GetObjectDetail)
 	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/:layout_type", httpHandler.GetContentLayoutByKeys)
 	router.PUT("t/:tenant_code/p/:product_code/o/:object_code/data", httpHandler.CreateObjectData)
+	router.PATCH("t/:tenant_code/p/:product_code/o/:object_code/data/:serial", httpHandler.UpdateObjectData)
 
 	router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"code": "404", "message": "Page not found"})

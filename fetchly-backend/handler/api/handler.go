@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -17,6 +18,7 @@ type HTTPHandler interface {
 	GetDataByRawQuery(c *gin.Context)
 	GetContentLayoutByKeys(c *gin.Context)
 	CreateObjectData(c *gin.Context)
+	UpdateObjectData(c *gin.Context)
 }
 
 type httpHandler struct {
@@ -195,6 +197,45 @@ func (h *httpHandler) CreateObjectData(c *gin.Context) {
 	if err != nil {
 		statusCode = http.StatusInternalServerError
 		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) UpdateObjectData(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+	var defaultUserSerial string = "system"
+
+	request := entity.DataMutationRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		statusCode = http.StatusBadRequest
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	if c.Param("serial") != "" {
+		request.Serial = c.Param("serial")
+	}
+
+	request.UserSerial = defaultUserSerial
+
+	response, err := h.catalogUc.UpdateObjectData(c, request)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		if errors.Is(err, entity.ErrorNoUpdateDataFound) {
+			statusCode = http.StatusNotFound
+			statusMessage = entity.ErrorNoUpdateDataFound.Error()
+		}
 
 		log.Println(statusMessage)
 		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)

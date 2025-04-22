@@ -7,6 +7,7 @@ var (
 	ErrorNotFound            = errors.New("your requested item is not found")
 	ErrorBadRequest          = errors.New("bad request")
 	ErrorSerialEmpty         = errors.New("serial is empty")
+	ErrorNoUpdateDataFound   = errors.New("no update data found")
 )
 
 const (
