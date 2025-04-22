@@ -4,7 +4,7 @@ import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import SidebarPanel from "@/components/SidebarPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
-import { ArrowLeftCircle, Save } from "lucide-react";
+import { ArrowLeftCircle, Save, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
@@ -201,6 +201,15 @@ export default function DynamicPageAdd() {
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
                       <button
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-4 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        onClick={() => {
+                          window.history.back()
+                        }}
+                      >
+                        <X size={18} />
+                        Cancel
+                      </button>
+                      <button
                         className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {
                           console.log("save")
@@ -227,6 +236,15 @@ export default function DynamicPageAdd() {
                     {/* main content section ends */}
 
                     <div className="flex justify-end gap-0 mt-2">
+                      <button
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-4 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        onClick={() => {
+                          window.history.back()
+                        }}
+                      >
+                        <X size={18} />
+                        Cancel
+                      </button>
                       <button
                         className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {

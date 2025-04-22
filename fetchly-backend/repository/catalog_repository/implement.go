@@ -609,7 +609,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 			switch v := value.(type) {
 			case string:
 				// Wrap strings in single quotes
-				formattedValue = fmt.Sprintf("lower('%s')", v)
+				formattedValue = fmt.Sprintf("'%s'", v)
 			case bool:
 				// Booleans: PostgreSQL uses true/false literals
 				formattedValue = fmt.Sprintf("%t", v)
@@ -629,7 +629,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 				fieldName = fmt.Sprintf("%v.%v", fieldName, lastFieldName)
 			} else {
 				// Prefix the field name with the table name
-				fieldName = fmt.Sprintf("lower(%v.%v)", tableName, fieldName)
+				fieldName = fmt.Sprintf("%v.%v", tableName, fieldName)
 			}
 
 			// lets create logic to handle case sensitive field and value
