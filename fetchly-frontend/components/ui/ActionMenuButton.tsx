@@ -1,7 +1,15 @@
 import { MoreVertical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const ActionMenuButton = () => {
+interface ActionMenuButtonProps {
+  serial: string;
+  tenantCode: string;
+  productCode: string;
+  objectCode: string;
+  viewContentCode: string;
+}
+
+const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewContentCode }: ActionMenuButtonProps) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +39,15 @@ const ActionMenuButton = () => {
       {open && (
         <div className="absolute left-0 mt-2 w-40 rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.4)] bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-2 text-sm text-gray-700 flex flex-col">
-            <button className="w-full text-left px-4 py-2 hover:bg-gray-200">Edit</button>
+            <button
+              className="w-full text-left px-4 py-2 hover:bg-gray-200"
+              onClick={() => {
+                // Handle edit action, redirect to ./edit/serial
+                window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/edit/${serial}`;
+              }}
+            >
+              Edit
+            </button>
             <button className="w-full text-left px-4 py-2 hover:bg-gray-200">Delete</button>
             <button className="w-full text-left px-4 py-2 hover:bg-gray-200">View Details</button>
           </div>

@@ -46,9 +46,21 @@ interface DynamicTableProps {
   innerWidth: number;
   actionButtonOpen: boolean[];
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
+  routeParams: RouteParams;
 }
 
-const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, currentPage = 1, totalPages = 1, loading, innerWidth, actionButtonOpen, setActionButtonOpen }: DynamicTableProps) => {
+const DynamicTable = ({
+  fields,
+  rows = [],
+  is_displaying_metadata_column,
+  currentPage = 1,
+  totalPages = 1,
+  loading,
+  innerWidth,
+  actionButtonOpen,
+  setActionButtonOpen,
+  routeParams
+}: DynamicTableProps) => {
   return (
     <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
       <div className="relative h-full">
@@ -122,7 +134,13 @@ const DynamicTable = ({ fields, rows = [], is_displaying_metadata_column, curren
                         minWidth: `48px`
                       }}
                     >
-                      <ActionMenuButton />
+                      <ActionMenuButton
+                        serial={String(row["serial"].value) || ""}
+                        tenantCode={routeParams.tenantCode}
+                        productCode={routeParams.productCode}
+                        objectCode={routeParams.objectCode}
+                        viewContentCode={routeParams.viewContentCode}
+                      />
                     </td>
 
                     {fields.map((field) => {
@@ -402,6 +420,11 @@ export default function DynamicPage() {
     }
   };
 
+  const addNewItem = () => {
+    // redirect to ./add page
+    window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/add`;
+  }
+
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
       fetchLayout();
@@ -436,7 +459,7 @@ export default function DynamicPage() {
                       <button
                         className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {
-                          console.log("add new item")
+                          addNewItem()
                         }}
                       >
                         <PlusCircle size={18} />
@@ -718,6 +741,12 @@ export default function DynamicPage() {
                       innerWidth={innerWidth || 0}
                       actionButtonOpen={actionButtonOpen}
                       setActionButtonOpen={setActionButtonOpen}
+                      routeParams={{
+                        tenantCode,
+                        productCode,
+                        objectCode,
+                        viewContentCode
+                      }}
                     />
 
                     <div className="flex justify-end mt-4 mr-4 pb-4">
