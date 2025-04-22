@@ -31,7 +31,7 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
     <div ref={menuRef} className="relative inline-block text-left">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="bg-gray-200 hover:bg-gray-300 text-gray font-semibold py-1 px-1 rounded-md transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+        className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray font-semibold py-1 px-1 rounded-md transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
       >
         <MoreVertical className="w-5 h-5" />
       </button>
@@ -40,7 +40,7 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
         <div className="absolute left-0 mt-2 w-40 rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.4)] bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-2 text-sm text-gray-700 flex flex-col">
             <button
-              className="w-full text-left px-4 py-2 hover:bg-gray-200"
+              className="cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200"
               onClick={() => {
                 // Handle edit action, redirect to ./edit/serial
                 window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/edit/${serial}`;
@@ -48,8 +48,8 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
             >
               Edit
             </button>
-            <button className="w-full text-left px-4 py-2 hover:bg-gray-200">Delete</button>
-            <button className="w-full text-left px-4 py-2 hover:bg-gray-200">View Details</button>
+            <button className="cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200">Delete</button>
+            <button className="cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200">View Details</button>
           </div>
         </div>
       )}
