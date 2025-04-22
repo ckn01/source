@@ -372,6 +372,7 @@ func isOperatorInLIKEList(operator entity.FilterOperator) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -501,7 +502,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 			switch v := value.(type) {
 			case string:
 				// Wrap strings in single quotes
-				formattedValue = fmt.Sprintf("'%s'", v)
+				formattedValue = fmt.Sprintf("lower('%s')", v)
 			case bool:
 				// Booleans: PostgreSQL uses true/false literals
 				formattedValue = fmt.Sprintf("%t", v)
@@ -521,8 +522,10 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 				fieldName = fmt.Sprintf("%v.%v", fieldName, lastFieldName)
 			} else {
 				// Prefix the field name with the table name
-				fieldName = fmt.Sprintf("%v.%v", tableName, fieldName)
+				fieldName = fmt.Sprintf("lower(%v.%v)", tableName, fieldName)
 			}
+
+			// lets create logic to handle case sensitive field and value
 
 			groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fieldName, operator, formattedValue))
 		}
@@ -600,10 +603,8 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 	for _, filterGroup := range request.Filters {
 		for fieldName, filter := range filterGroup.Filters {
 			if strings.Contains(fieldName, "__") {
-				queryResult, joinQueryMap := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
+				queryResult, _ := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
 				query = queryResult
-
-				fmt.Print("joinQueryMap: ", joinQueryMap)
 			}
 		}
 	}
@@ -645,10 +646,10 @@ func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, r
 	for _, filterGroup := range request.Filters {
 		for fieldName, filter := range filterGroup.Filters {
 			if strings.Contains(fieldName, "__") {
-				queryResult, joinQueryMap := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
+				queryResult, _ := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
 				query = queryResult
 
-				fmt.Print("joinQueryMap: ", joinQueryMap)
+				// fmt.Print("joinQueryMap: ", joinQueryMap)
 			}
 		}
 	}
