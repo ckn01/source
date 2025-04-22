@@ -4,6 +4,8 @@ type FilterGroupOperator string
 type FilterOperator string
 
 const (
+	DEFAULT_IDENTIFIER = "serial"
+
 	PUBLIC             = "public"
 	PRODUCT_CODE       = "product_code"
 	TENANT_CODE        = "tenant_code"

@@ -431,9 +431,9 @@ func (r *repository) UpdateObjectData(ctx context.Context, request entity.DataMu
 	}
 
 	// compose where clause
-	identifierColumn := "serial"
+	identifierColumn := entity.DEFAULT_IDENTIFIER
 	if !helper.IsUUID(request.Serial) {
-		identifierColumn = "serial"
+		identifierColumn = entity.DEFAULT_IDENTIFIER
 	}
 
 	// check if table has updated_at column
@@ -693,11 +693,11 @@ func getSingleData(columnList []map[string]interface{}, columnsString, tableName
 	if hasDeletedAt {
 		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
 	} else {
-		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+		query = query + " WHERE TRUE"
 	}
 
 	// apply serial to get single data
-	identifierColumn := "serial"
+	identifierColumn := entity.DEFAULT_IDENTIFIER
 	if !helper.IsUUID(request.Serial) {
 		identifierColumn = "code"
 	}
@@ -741,7 +741,7 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 	if hasDeletedAt {
 		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
 	} else {
-		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+		query = query + " WHERE TRUE"
 	}
 
 	// Apply dynamic filters if they exist
@@ -799,7 +799,7 @@ func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, r
 	if hasDeletedAt {
 		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
 	} else {
-		query = query + fmt.Sprintf(" WHERE %v.%v IS NOT NULL", tableName, "serial")
+		query = query + " WHERE TRUE"
 	}
 
 	// Apply dynamic filters if they exist

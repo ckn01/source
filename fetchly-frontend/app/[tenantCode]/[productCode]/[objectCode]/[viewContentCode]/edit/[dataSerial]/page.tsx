@@ -130,7 +130,7 @@ export default function DynamicPageEdit() {
       setIsLoading(true)
 
       const dataResponse = await fetch(
-        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/detail/${dataSerial}`,
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data/detail/${dataSerial}`,
         {
           method: APIMethod.POST,
           headers: {
