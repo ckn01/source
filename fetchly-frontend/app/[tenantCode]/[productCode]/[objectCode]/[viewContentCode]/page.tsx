@@ -242,6 +242,14 @@ export default function DynamicPage() {
     console.log("filters", filters);
   };
 
+  const applyDataFilter = () => {
+    console.log(JSON.stringify({ filters }, null, 2))
+
+    setIsSidebarOpen(false);
+    setIsLoading(true);
+    fetchData(responseLayout, currentPage);
+  }
+
   const addGroup = () => {
     setFilters((prev) => {
       const updated = { ...prev[0] };
@@ -366,7 +374,7 @@ export default function DynamicPage() {
               acc[field.field_code] = field;
               return acc;
             }, {}) || {},
-            filters: [],
+            filters: filters,
             orders: [],
             page: page ? page : currentPage,
             page_size: 20,
@@ -692,7 +700,7 @@ export default function DynamicPage() {
                         </button>
 
                         <button
-                          onClick={() => console.log(JSON.stringify({ filters }, null, 2))}
+                          onClick={() => applyDataFilter()}
                           className="px-4 flex items-center gap-2 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 cursor-pointer transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         >
                           <CheckCircle size={18} /> Apply

@@ -527,10 +527,16 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 			groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fieldName, operator, formattedValue))
 		}
 		// Combine the group clauses with the group operator (AND/OR)
-		filterClauses = append(filterClauses, fmt.Sprintf("(%s)", strings.Join(groupClauses, fmt.Sprintf(" %s ", filterGroup.Operator))))
+		if len(groupClauses) > 0 {
+			clause := fmt.Sprintf("(%s)", strings.Join(groupClauses, fmt.Sprintf(" %s ", filterGroup.Operator)))
+			filterClauses = append(filterClauses, clause)
+		}
 	}
 
-	filterQuery := strings.Join(filterClauses, " AND ")
+	filterQuery := ""
+	if len(filterClauses) > 0 {
+		filterQuery = strings.Join(filterClauses, " AND ")
+	}
 
 	return filterQuery
 }
@@ -606,7 +612,11 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
-		query = query + " AND " + r.buildFilters(ctx, request, tableName)
+		filterString := r.buildFilters(ctx, request, tableName)
+
+		if len(filterString) > 0 {
+			query = query + " AND " + filterString
+		}
 	}
 
 	// Apply dynamic order by if they exist
@@ -647,7 +657,11 @@ func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, r
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
-		query = query + " AND " + r.buildFilters(ctx, request, tableName)
+		filterString := r.buildFilters(ctx, request, tableName)
+
+		if len(filterString) > 0 {
+			query = query + " AND " + filterString
+		}
 	}
 
 	log.Print(query)
