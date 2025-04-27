@@ -629,6 +629,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 		var groupClauses []string
 
 		for fieldName, filter := range filterGroup.Filters {
+			completeTableName := fmt.Sprintf("%v.%v", request.TenantCode, request.ObjectCode)
 			operator := entity.OperatorQueryMap[filter.Operator]
 			value := filter.Value
 
@@ -671,7 +672,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 
 			// lets create logic to handle case sensitive field and value
 
-			groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fieldName, operator, formattedValue))
+			groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fmt.Sprintf("%v.%v", completeTableName, fieldName), operator, formattedValue))
 		}
 		// Combine the group clauses with the group operator (AND/OR)
 		if len(groupClauses) > 0 {
