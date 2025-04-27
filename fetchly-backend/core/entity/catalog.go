@@ -1,5 +1,7 @@
 package entity
 
+import "github.com/fetchlydev/source/fetchly-backend/pkg/helper"
+
 type FilterGroupOperator string
 type FilterOperator string
 
@@ -55,25 +57,26 @@ var (
 )
 
 type Tenants struct {
-	ID     int32  `json:"id"`
-	Serial string `json:"serial"`
-	Code   string `json:"code"`
-	Name   string `json:"name"`
+	ID           int32          `json:"id"`
+	Serial       string         `json:"serial"`
+	Code         string         `json:"code"`
+	Name         string         `json:"name"`
+	TenantConfig map[string]any `json:"tenant_config"`
 }
 
 type DataSource struct {
-	ID          int                    `json:"id"`
-	Serial      string                 `json:"serial"`
-	Code        string                 `json:"code"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Host        string                 `json:"host"`
-	Port        string                 `json:"port"`
-	Username    string                 `json:"username"`
-	Password    string                 `json:"password"`
-	DBName      string                 `json:"db_name"`
-	Configs     map[string]interface{} `json:"configs"`
-	Tenant      Tenants                `json:"tenant"`
+	ID          int            `json:"id"`
+	Serial      string         `json:"serial"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Host        string         `json:"host"`
+	Port        string         `json:"port"`
+	Username    string         `json:"username"`
+	Password    string         `json:"password"`
+	DBName      string         `json:"db_name"`
+	Configs     map[string]any `json:"configs"`
+	Tenant      Tenants        `json:"tenant"`
 }
 
 type Modules struct {
@@ -106,35 +109,35 @@ type Objects struct {
 }
 
 type ObjectFields struct {
-	ID                int                    `json:"id"`
-	Serial            string                 `json:"serial"`
-	Object            Objects                `json:"object"`
-	FieldCode         string                 `json:"field_code"`
-	IsDisplayName     bool                   `json:"is_display_name"`
-	DisplayName       string                 `json:"display_name"`
-	FieldReference    string                 `json:"field_reference"`
-	Description       string                 `json:"description"`
-	DataType          DataType               `json:"data_type"`
-	ValidationRules   map[string]interface{} `json:"validation_rules"`
-	TargetObject      Objects                `json:"target_object"`
-	TargetObjectField map[string]interface{} `json:"target_object_field"`
-	Relation          string                 `json:"relation"`
-	IsSystem          bool                   `json:"is_system"`
-	DefaultValue      string                 `json:"default_value"`
+	ID                int            `json:"id"`
+	Serial            string         `json:"serial"`
+	Object            Objects        `json:"object"`
+	FieldCode         string         `json:"field_code"`
+	IsDisplayName     bool           `json:"is_display_name"`
+	DisplayName       string         `json:"display_name"`
+	FieldReference    string         `json:"field_reference"`
+	Description       string         `json:"description"`
+	DataType          DataType       `json:"data_type"`
+	ValidationRules   map[string]any `json:"validation_rules"`
+	TargetObject      Objects        `json:"target_object"`
+	TargetObjectField map[string]any `json:"target_object_field"`
+	Relation          string         `json:"relation"`
+	IsSystem          bool           `json:"is_system"`
+	DefaultValue      string         `json:"default_value"`
 }
 
 type DataType struct {
-	ID                int                    `json:"id"`
-	Serial            string                 `json:"serial"`
-	Code              string                 `json:"code"`
-	Name              string                 `json:"name"`
-	Description       string                 `json:"description"`
-	PrimitiveDataType string                 `json:"primitive_data_type"`
-	ValidationRules   map[string]interface{} `json:"validation_rules"`
-	IsActive          bool                   `json:"is_active"`
-	DisplayType       string                 `json:"display_type"`
-	FieldOptions      map[string]interface{} `json:"field_options"`
-	Icon              string                 `json:"icon"`
+	ID                int            `json:"id"`
+	Serial            string         `json:"serial"`
+	Code              string         `json:"code"`
+	Name              string         `json:"name"`
+	Description       string         `json:"description"`
+	PrimitiveDataType string         `json:"primitive_data_type"`
+	ValidationRules   map[string]any `json:"validation_rules"`
+	IsActive          bool           `json:"is_active"`
+	DisplayType       string         `json:"display_type"`
+	FieldOptions      map[string]any `json:"field_options"`
+	Icon              string         `json:"icon"`
 }
 
 type FilterItem struct {
@@ -144,8 +147,17 @@ type FilterItem struct {
 }
 
 type FilterGroup struct {
-	Operator FilterOperator        `json:"operator"`
-	Filters  map[string]FilterItem `json:"filter_item"`
+	Operator helper.FlexibleOperator[FilterOperator, FilterGroupOperator] `json:"operator"`
+	Filters  map[string]FilterItem                                        `json:"filter_item"`
+}
+
+// In your entity package maybe
+func NewFilterOperator(op FilterOperator) helper.FlexibleOperator[FilterOperator, FilterGroupOperator] {
+	return helper.NewFlexibleOperatorFromT1[FilterOperator, FilterGroupOperator](op)
+}
+
+func NewFilterGroupOperator(op FilterGroupOperator) helper.FlexibleOperator[FilterOperator, FilterGroupOperator] {
+	return helper.NewFlexibleOperatorFromT2[FilterOperator, FilterGroupOperator](op)
 }
 
 type Order struct {

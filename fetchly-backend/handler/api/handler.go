@@ -13,6 +13,8 @@ import (
 )
 
 type HTTPHandler interface {
+	GetTenantByCode(c *gin.Context)
+	GetTenantProductByCode(c *gin.Context)
 	GetObjectData(c *gin.Context)
 	GetObjectDetail(c *gin.Context)
 	GetDataByRawQuery(c *gin.Context)
@@ -33,6 +35,70 @@ func NewHTTPHandler(cfg config.Config, catalogUc module.CatalogUsecase, viewUc m
 		catalogUc: catalogUc,
 		viewUc:    viewUc,
 	}
+}
+
+func (h *httpHandler) GetTenantByCode(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	code := c.Param("tenant_code")
+	if code == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	response, err := h.catalogUc.GetTenantByCode(c, code)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) GetTenantProductByCode(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	code := c.Param("product_code")
+	if code == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	tenantCode := c.Param("tenant_code")
+	if tenantCode == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	response, err := h.catalogUc.GetTenantProductByCode(c, code, tenantCode)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
 }
 
 func (h *httpHandler) GetObjectData(c *gin.Context) {

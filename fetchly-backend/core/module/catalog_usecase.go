@@ -14,6 +14,8 @@ import (
 )
 
 type CatalogUsecase interface {
+	GetTenantByCode(ctx context.Context, code string) (resp map[string]entity.DataItem, err error)
+	GetTenantProductByCode(ctx context.Context, code, tenantCode string) (resp map[string]entity.DataItem, err error)
 	GetObjectData(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error)
 	GetObjectDetail(ctx context.Context, request entity.CatalogQuery, serial string) (resp map[string]entity.DataItem, err error)
 	GetDataByRawQuery(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error)
@@ -36,6 +38,57 @@ func NewCatalogUsecase(cfg config.Config, catalogRepo repository.CatalogReposito
 		catalogRepo: catalogRepo,
 		viewRepo:    viewRepo,
 	}
+}
+
+func (uc *catalogUsecase) GetTenantByCode(ctx context.Context, code string) (resp map[string]entity.DataItem, err error) {
+	result, err := uc.catalogRepo.GetObjectData(ctx, entity.CatalogQuery{
+		TenantCode: entity.PUBLIC,
+		ObjectCode: "tenants",
+		Filters: []entity.FilterGroup{
+			{
+				Operator: entity.NewFilterGroupOperator(entity.FilterOperatorAnd),
+				Filters: map[string]entity.FilterItem{
+					"code": {Operator: entity.FilterOperatorEqual, Value: code, FieldName: "code"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	resp = make(map[string]entity.DataItem)
+	if len(result.Items) > 0 {
+		resp = result.Items[0]
+	}
+
+	return resp, nil
+}
+
+func (uc *catalogUsecase) GetTenantProductByCode(ctx context.Context, code, tenantCode string) (resp map[string]entity.DataItem, err error) {
+	result, err := uc.catalogRepo.GetObjectData(ctx, entity.CatalogQuery{
+		TenantCode: entity.PUBLIC,
+		ObjectCode: "tenant_product",
+		Filters: []entity.FilterGroup{
+			{
+				Operator: entity.NewFilterGroupOperator(entity.FilterOperatorAnd),
+				Filters: map[string]entity.FilterItem{
+					"product_serial__code": {Operator: entity.FilterOperatorEqual, Value: code, FieldName: "product_serial__code"},
+					"tenant_serial__code":  {Operator: entity.FilterOperatorEqual, Value: tenantCode, FieldName: "tenant_serial__code"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	resp = make(map[string]entity.DataItem)
+	if len(result.Items) > 0 {
+		resp = result.Items[0]
+	}
+
+	return resp, nil
 }
 
 func (uc *catalogUsecase) GetObjectFieldsByObjectCode(ctx context.Context, request entity.CatalogQuery) (resp map[string]any, err error) {
@@ -107,7 +160,7 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 		filterGroup := entity.FilterGroup{}
 		if filterMap, ok := filter.(map[string]any); ok {
 			if operator, ok := filterMap["operator"].(string); ok {
-				filterGroup.Operator = entity.FilterOperator(operator)
+				filterGroup.Operator = entity.NewFilterGroupOperator(entity.FilterGroupOperator(operator))
 			}
 
 			if filterItem, ok := filterMap["filter_item"].(map[string]any); ok {
@@ -142,7 +195,7 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 		for _, filter := range request.Filters {
 			filterGroup := entity.FilterGroup{}
 
-			if filter.Operator != "" {
+			if !filter.Operator.IsEmpty() {
 				filterGroup.Operator = filter.Operator
 			}
 

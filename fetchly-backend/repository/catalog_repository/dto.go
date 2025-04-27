@@ -11,16 +11,17 @@ import (
 )
 
 type Tenants struct {
-	ID        int            `gorm:"column:id" json:"id"`
-	Serial    string         `gorm:"column:serial" json:"serial"`
-	Code      string         `gorm:"column:code" json:"code"`
-	Name      string         `gorm:"column:name" json:"name"`
-	CreatedBy string         `gorm:"column:created_by" json:"created_by"`
-	CreatedAt time.Time      `gorm:"column:created_at" json:"created_at"`
-	UpdatedBy string         `gorm:"column:updated_by" json:"updated_by"`
-	UpdatedAt time.Time      `gorm:"column:updated_at" json:"updated_at"`
-	DeletedBy sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	ID           int            `gorm:"column:id" json:"id"`
+	Serial       string         `gorm:"column:serial" json:"serial"`
+	Code         string         `gorm:"column:code" json:"code"`
+	Name         string         `gorm:"column:name" json:"name"`
+	CreatedBy    string         `gorm:"column:created_by" json:"created_by"`
+	CreatedAt    time.Time      `gorm:"column:created_at" json:"created_at"`
+	UpdatedBy    string         `gorm:"column:updated_by" json:"updated_by"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at" json:"updated_at"`
+	DeletedBy    sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
+	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	TenantConfig map[string]any `gorm:"column:tenant_config" json:"tenant_config"`
 }
 
 type DataSource struct {

@@ -36,12 +36,29 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 	// handler
 	httpHandler := api.NewHTTPHandler(cfg, catalogUc, viewUc)
 
-	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/data", httpHandler.GetObjectData)
-	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/data/raw", httpHandler.GetDataByRawQuery)
-	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/data/detail/:serial", httpHandler.GetObjectDetail)
-	router.POST("t/:tenant_code/p/:product_code/o/:object_code/view/:view_content_code/:layout_type", httpHandler.GetContentLayoutByKeys)
-	router.PUT("t/:tenant_code/p/:product_code/o/:object_code/data", httpHandler.CreateObjectData)
-	router.PATCH("t/:tenant_code/p/:product_code/o/:object_code/data/:serial", httpHandler.UpdateObjectData)
+	t := router.Group("t/:tenant_code")
+	{
+		t.POST("", httpHandler.GetTenantByCode)
+
+		p := t.Group("p/:product_code")
+		{
+			p.POST("", httpHandler.GetTenantProductByCode)
+
+			o := p.Group("o/:object_code")
+			{
+				v := o.Group("view/:view_content_code")
+				{
+					v.POST("/data", httpHandler.GetObjectData)
+					v.POST("/data/raw", httpHandler.GetDataByRawQuery)
+					v.POST("/data/detail/:serial", httpHandler.GetObjectDetail)
+					v.POST("/:layout_type", httpHandler.GetContentLayoutByKeys)
+				}
+
+				o.PUT("/data", httpHandler.CreateObjectData)
+				o.PATCH("/data/:serial", httpHandler.UpdateObjectData)
+			}
+		}
+	}
 
 	router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"code": "404", "message": "Page not found"})

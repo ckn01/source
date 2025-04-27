@@ -177,6 +177,14 @@ func (r *repository) GetObjectData(ctx context.Context, request entity.CatalogQu
 		resultCount.Scan(&resp.TotalData)
 	}
 
+	if request.PageSize < 1 {
+		request.PageSize = 10
+	}
+
+	if request.Page < 1 {
+		request.Page = 1
+	}
+
 	// Get data with pagination
 	dataQuery := r.getDataWithPagination(ctx, columnsString, completeTableName, request, joinQueryMap, joinQueryOrder, columnsList)
 	rows, err := r.db.Raw(dataQuery).Rows()
@@ -638,7 +646,9 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 		}
 		// Combine the group clauses with the group operator (AND/OR)
 		if len(groupClauses) > 0 {
-			clause := fmt.Sprintf("(%s)", strings.Join(groupClauses, fmt.Sprintf(" %s ", filterGroup.Operator)))
+			operatorValue, _ := filterGroup.Operator.AsT2()
+
+			clause := fmt.Sprintf("(%s)", strings.Join(groupClauses, fmt.Sprintf(" %s ", operatorValue)))
 			filterClauses = append(filterClauses, clause)
 		}
 	}
