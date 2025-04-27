@@ -64,12 +64,46 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [navigationMenuItems, setNavigationMenuItems] = useState(menuItems);
   const [navigationLayout, setNavigationLayout] = useState<any>(null);
+  const [tenantData, setTenantData] = useState<any>(null);
+  const [appTitle, setAppTitle] = useState<string>(dashboardConfig.title);
 
   const toggleSidebar = () => {
     setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
   };
 
   const isSidebarOpen = sidebarWidth > 80;
+
+  const fetchTenant = async () => {
+    try {
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}`,
+        {
+          method: APIMethod.POST,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch tenant");
+      }
+
+      const data = await response.json();
+      const tenantData = data.data;
+
+      setTenantData(tenantData);
+
+      // fetching app title from tenant data
+      let tenantConfig = tenantData?.tenant_config?.value
+      if (tenantConfig?.header_title) {
+        setAppTitle(tenantConfig?.header_title)
+      }
+    } catch (error) {
+      console.error("Tenant API error:", error);
+    }
+  }
 
   const fetchNavigation = async () => {
     try {
@@ -100,6 +134,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
+      fetchTenant();
       fetchNavigation();
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
@@ -228,7 +263,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-4 pl-3 flex items-center justify-between border-b border-amber-600">
           {isSidebarOpen && (
             <h2 className="text-3xl font-semibold tracking-wide">
-              {dashboardConfig.title}
+              {appTitle}
             </h2>
           )}
           <button

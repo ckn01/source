@@ -207,6 +207,7 @@ export default function DynamicPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [innerWidth, setInnerWidth] = useState<number | null>(null);
 
+  const [tenantData, setTenantData] = useState<any>(null);
   const [responseLayout, setResponseLayout] = useState<any>(null);
   const [responseData, setResponseData] = useState<any>(null);
   const [viewContent, setViewContent] = useState<any>(null);
@@ -322,6 +323,32 @@ export default function DynamicPage() {
     });
   };
 
+  const fetchTenant = async () => {
+    try {
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}`,
+        {
+          method: APIMethod.POST,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch tenant");
+      }
+
+      const data = await response.json();
+      const tenantData = data.data;
+
+      setTenantData(tenantData);
+    } catch (error) {
+      console.error("Tenant API error:", error);
+    }
+  }
+
   const fetchLayout = async () => {
     try {
       const response = await fetch(
@@ -427,6 +454,7 @@ export default function DynamicPage() {
 
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
+      fetchTenant();
       fetchLayout();
     }
 
