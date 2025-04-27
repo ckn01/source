@@ -8,7 +8,7 @@ import (
 	"github.com/fetchlydev/source/fetchly-backend/core/entity"
 )
 
-func HandleSingleRow(columnsList []map[string]interface{}, rows *sql.Rows, request entity.CatalogQuery) (item map[string]entity.DataItem, err error) {
+func HandleSingleRow(columnsList []map[string]any, rows *sql.Rows, request entity.CatalogQuery) (item map[string]entity.DataItem, err error) {
 	// Create a slice of interface{} to hold column values
 	values := make([]any, len(columnsList))
 	valuePointers := make([]any, len(columnsList))
@@ -48,12 +48,25 @@ func HandleSingleRow(columnsList []map[string]interface{}, rows *sql.Rows, reque
 			key = colName[entity.FieldOriginalFieldCode].(string)
 		}
 
+		// TODO: handle display value
+		displayValue := val
+		additionalData := map[string]any{}
+
+		if colName["foreign_table_name"] != nil {
+			additionalData["foreign_table_name"] = colName["foreign_table_name"]
+		}
+
+		if colName["foreign_field_name"] != nil {
+			additionalData["foreign_field_name"] = colName["foreign_field_name"]
+		}
+
 		item[key] = entity.DataItem{
-			FieldCode:    colName[entity.FieldColumnCode].(string),
-			FieldName:    fieldName,
-			DataType:     colName[entity.FieldDataType].(string),
-			Value:        val,
-			DisplayValue: val,
+			FieldCode:      colName[entity.FieldColumnCode].(string),
+			FieldName:      fieldName,
+			DataType:       colName[entity.FieldDataType].(string),
+			Value:          val,
+			DisplayValue:   displayValue,
+			AdditionalData: additionalData,
 		}
 	}
 

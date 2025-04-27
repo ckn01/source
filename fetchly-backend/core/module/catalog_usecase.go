@@ -164,7 +164,6 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 			}
 
 			if filterItem, ok := filterMap["filter_item"].(map[string]any); ok {
-				fmt.Printf("filterItem: %+v\n", filterItem)
 				filterGroup.Filters = make(map[string]entity.FilterItem)
 				for key, item := range filterItem {
 					if itemMap, ok := item.(map[string]any); ok {
@@ -273,6 +272,8 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 		}
 	}
 
+	foreignTables := make(map[string][]any)
+
 	// iterate object fields and map to response
 	for i, items := range results.Items {
 		for j, item := range items {
@@ -321,7 +322,58 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 			// set item.DataType to CamelCase
 			item.DataType = cases.Title(language.English).String(item.DataType)
 
+			// check if additionaldata.foreign_table_name and additionaldata.foreign_field_name exist
+			if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
+				if _, ok := foreignTables[item.AdditionalData["foreign_table_name"].(string)]; !ok {
+					foreignTables[item.AdditionalData["foreign_table_name"].(string)] = []any{}
+				}
+
+				foreignTables[item.AdditionalData["foreign_table_name"].(string)] = append(foreignTables[item.AdditionalData["foreign_table_name"].(string)], item.Value)
+			}
+
 			results.Items[i][j] = item
+		}
+	}
+
+	foreignRequest := entity.CatalogQuery{
+		TenantCode:  request.TenantCode,
+		ProductCode: request.ProductCode,
+	}
+
+	foreignTableResuls := make(map[string]map[string]string)
+
+	for foreignTable, params := range foreignTables {
+		fmt.Printf("params: %+v", params)
+		foreignRequest.ObjectCode = foreignTable
+		foreignRequest.Filters = append(foreignRequest.Filters, entity.FilterGroup{
+			Operator: entity.NewFilterGroupOperator(entity.FilterOperatorAnd),
+			Filters: map[string]entity.FilterItem{
+				"serial": {Operator: entity.FilterOperatorIN, Value: params},
+			},
+		})
+
+		foreignResults, err := uc.catalogRepo.GetObjectData(ctx, foreignRequest)
+		if err != nil {
+			return resp, err
+		}
+
+		itemMap := make(map[string]string)
+		for _, item := range foreignResults.Items {
+			itemMap[item["serial"].Value.(string)] = item["name"].Value.(string)
+		}
+
+		foreignTableResuls[foreignTable] = itemMap
+	}
+
+	// fmt.Printf("foreignTableResuls: %+v", foreignTableResuls)
+	for i, items := range results.Items {
+		for j, item := range items {
+			if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
+				// handle display value logic here
+				item.DisplayValue = foreignTableResuls[item.AdditionalData["foreign_table_name"].(string)][item.Value.(string)]
+
+				results.Items[i][j] = item
+			}
 		}
 	}
 

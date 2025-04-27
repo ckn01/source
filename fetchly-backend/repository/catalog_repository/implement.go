@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 
 	"github.com/fetchlydev/source/fetchly-backend/config"
@@ -27,7 +28,7 @@ func New(cfg config.Config, db *gorm.DB) repository_intf.CatalogRepository {
 	}
 }
 
-func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQuery) (columns []map[string]interface{}, columnStrings string, joinQueryMap map[string]string, joinQueryOrder []string, err error) {
+func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQuery) (columns []map[string]any, columnStrings string, joinQueryMap map[string]string, joinQueryOrder []string, err error) {
 	joinQueryMapAll := make(map[string]string)
 	joinQueryOrderAll := make([]string, 0)
 
@@ -48,7 +49,13 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 	AND col.table_name = '%v'
 	`, request.TenantCode, request.ObjectCode)
 
-	rows, err := r.db.Raw(listColumnQuery).Rows()
+	db := r.db
+
+	if r.cfg.IsDebugMode {
+		db.Debug()
+	}
+
+	rows, err := db.Raw(listColumnQuery).Rows()
 	if err != nil {
 		return columns, columnStrings, joinQueryMap, joinQueryOrder, err
 	}
@@ -76,6 +83,25 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 		columns = append(columns, column)
 	}
 
+	for _, column := range columns {
+		_, foreignTableNameOK := column["foreign_table_name"]
+		_, foreignFieldNameOK := column["foreign_field_name"]
+
+		if foreignTableNameOK && foreignFieldNameOK {
+			// 		// append foreign name display field into select
+			// 		// TODO: make _name dynamic
+			newForeignColumn := make(map[string]any)
+			foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
+
+			newForeignColumn[entity.FieldDataType] = "string"
+			newForeignColumn[entity.FieldColumnCode] = foreignColumName
+			newForeignColumn[entity.FieldColumnName] = foreignColumName
+			newForeignColumn[entity.FieldCompleteColumnCode] = fmt.Sprintf("%v.name", foreignColumName)
+
+			columns = append(columns, newForeignColumn)
+		}
+	}
+
 	// filter columns if request.Fields is not empty
 	if len(request.Fields) > 0 {
 		var filteredColumns []map[string]any
@@ -94,7 +120,7 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 			} else {
 				// handle fieldName that has double underscore this indicates that it is a relationship field
 				foreignFieldSet := strings.Split(fieldNameKey, "__")
-				_, joinQueryMap := r.HandleChainingJoinQuery(ctx, "", fieldNameKey, request.ObjectCode, request, entity.FilterItem{})
+				_, joinQueryMap := r.HandleChainingJoinQuery(ctx, "", fieldNameKey, fmt.Sprintf("%v.%v", request.TenantCode, request.ObjectCode), request, entity.FilterItem{})
 
 				// append joinQueryMap to joinQueryMapAll
 				for k, v := range joinQueryMap {
@@ -616,28 +642,31 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 
 			switch v := value.(type) {
 			case string:
-				// Wrap strings in single quotes
 				formattedValue = fmt.Sprintf("'%s'", v)
 			case bool:
-				// Booleans: PostgreSQL uses true/false literals
 				formattedValue = fmt.Sprintf("%t", v)
 			case int, int8, int16, int32, int64:
 				formattedValue = fmt.Sprintf("%d", v)
 			case float32, float64:
 				formattedValue = fmt.Sprintf("%f", v)
 			default:
-				// Fallback to string with single quotes
-				formattedValue = fmt.Sprintf("'%v'", v)
-			}
+				val := reflect.ValueOf(value)
+				if val.Kind() == reflect.Slice {
+					// It's a slice/array
+					formattedValue = "("
 
-			if strings.Contains(fieldName, "__") {
-				foreignFieldSet := strings.Split(fieldName, "__")
-				lastFieldName := foreignFieldSet[1]
-
-				fieldName = fmt.Sprintf("%v.%v", fieldName, lastFieldName)
-			} else {
-				// Prefix the field name with the table name
-				fieldName = fmt.Sprintf("%v.%v", tableName, fieldName)
+					for i := range val.Len() {
+						elem := val.Index(i).Interface()
+						formattedValue += fmt.Sprintf("'%v'", elem)
+						if i < val.Len()-1 {
+							formattedValue += ", "
+						}
+					}
+					formattedValue += ")"
+				} else {
+					// Fallback
+					formattedValue = fmt.Sprintf("'%v'", v)
+				}
 			}
 
 			// lets create logic to handle case sensitive field and value
@@ -853,7 +882,7 @@ func (r *repository) HandleChainingJoinQuery(ctx context.Context, query, fieldNa
 			}
 
 			joinAliasField := joinAlias
-			joinTableName := currentTableName
+			joinTableName := tableName
 			if nextJoinAlias != "" {
 				joinTableName = nextJoinAlias
 			}

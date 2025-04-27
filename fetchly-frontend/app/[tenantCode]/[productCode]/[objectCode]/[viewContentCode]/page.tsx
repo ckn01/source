@@ -5,7 +5,7 @@ import SidebarPanel from "@/components/SidebarPanel";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
-import { CheckCircle, Filter, PlusCircle, TrashIcon, XCircle } from "lucide-react";
+import { CheckCircle, Filter, PlusCircle, RefreshCcw, TrashIcon, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReactPaginate from 'react-paginate';
@@ -160,7 +160,7 @@ const DynamicTable = ({
                             ...(isExpandable ? { width: "100%" } : {})
                           }}
                         >
-                          {String(row[field.field_code]?.value ?? "")}
+                          {String(row[field.field_code]?.display_value ?? "")}
                         </td>
                       );
                     })}
@@ -485,7 +485,7 @@ export default function DynamicPage() {
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
                       <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {
                           addNewItem()
                         }}
@@ -495,13 +495,22 @@ export default function DynamicPage() {
                       </button>
 
                       <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
                         onClick={() => {
                           setIsSidebarOpen(true);
                         }}
                       >
                         <Filter size={18} />
                         Filter
+                      </button>
+
+                      <button
+                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-3 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        onClick={() => {
+                          fetchData(responseLayout, currentPage)
+                        }}
+                      >
+                        <RefreshCcw size={18} />
                       </button>
                     </div>
 

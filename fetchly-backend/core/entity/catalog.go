@@ -26,6 +26,7 @@ const (
 	FilterOperatorGreaterThanEqual FilterOperator = "greater_than_equal"
 	FilterOperatorLessThan         FilterOperator = "less_than"
 	FilterOperatorLessThanEqual    FilterOperator = "less_than_equal"
+	FilterOperatorIN               FilterOperator = "in"
 
 	FieldColumnName            = "field_name"
 	FieldDataType              = "data_type"
@@ -48,6 +49,7 @@ var (
 		FilterOperatorGreaterThanEqual: ">=",
 		FilterOperatorLessThan:         "<",
 		FilterOperatorLessThanEqual:    "<=",
+		FilterOperatorIN:               "IN",
 	}
 
 	OperatorLIKEList = []FilterOperator{
@@ -188,12 +190,13 @@ type CatalogQuery struct {
 }
 
 type DataItem struct {
-	CompleteFieldCode string `json:"complete_field_code"`
-	FieldCode         string `json:"field_code"`
-	FieldName         string `json:"field_name"`
-	DataType          string `json:"data_type"`
-	Value             any    `json:"value"`
-	DisplayValue      any    `json:"display_value"`
+	CompleteFieldCode string         `json:"complete_field_code"`
+	FieldCode         string         `json:"field_code"`
+	FieldName         string         `json:"field_name"`
+	DataType          string         `json:"data_type"`
+	Value             any            `json:"value"`
+	DisplayValue      any            `json:"display_value"`
+	AdditionalData    map[string]any `json:"additional_data"`
 }
 
 type CatalogResponse struct {
