@@ -329,6 +329,9 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 				}
 
 				foreignTables[item.AdditionalData["foreign_table_name"].(string)] = append(foreignTables[item.AdditionalData["foreign_table_name"].(string)], item.Value)
+
+				displayValue := items[fmt.Sprintf("%v__name", j)].Value
+				item.DisplayValue = displayValue
 			}
 
 			results.Items[i][j] = item
@@ -340,10 +343,9 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 		ProductCode: request.ProductCode,
 	}
 
-	foreignTableResuls := make(map[string]map[string]string)
+	foreignTableResults := make(map[string]map[string]string)
 
 	for foreignTable, params := range foreignTables {
-		fmt.Printf("params: %+v", params)
 		foreignRequest.ObjectCode = foreignTable
 		foreignRequest.Filters = append(foreignRequest.Filters, entity.FilterGroup{
 			Operator: entity.NewFilterGroupOperator(entity.FilterOperatorAnd),
@@ -362,18 +364,7 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 			itemMap[item["serial"].Value.(string)] = item["name"].Value.(string)
 		}
 
-		foreignTableResuls[foreignTable] = itemMap
-	}
-
-	for i, items := range results.Items {
-		for j, item := range items {
-			if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
-				// handle display value logic here
-				item.DisplayValue = foreignTableResuls[item.AdditionalData["foreign_table_name"].(string)][item.Value.(string)]
-
-				results.Items[i][j] = item
-			}
-		}
+		foreignTableResults[foreignTable] = itemMap
 	}
 
 	return results, err

@@ -83,24 +83,24 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 		columns = append(columns, column)
 	}
 
-	for _, column := range columns {
-		_, foreignTableNameOK := column["foreign_table_name"]
-		_, foreignFieldNameOK := column["foreign_field_name"]
+	// for _, column := range columns {
+	// 	_, foreignTableNameOK := column["foreign_table_name"]
+	// 	_, foreignFieldNameOK := column["foreign_field_name"]
 
-		if foreignTableNameOK && foreignFieldNameOK {
-			// append foreign name display field into select
-			// room for improvement: replace hardcoded __name with display value from catalog
-			newForeignColumn := make(map[string]any)
-			foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
+	// 	if foreignTableNameOK && foreignFieldNameOK {
+	// 		// append foreign name display field into select
+	// 		// room for improvement: replace hardcoded __name with display value from catalog
+	// 		newForeignColumn := make(map[string]any)
+	// 		foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
 
-			newForeignColumn[entity.FieldDataType] = "string"
-			newForeignColumn[entity.FieldColumnCode] = foreignColumName
-			newForeignColumn[entity.FieldColumnName] = foreignColumName
-			newForeignColumn[entity.FieldCompleteColumnCode] = fmt.Sprintf("%v.name", foreignColumName)
+	// 		newForeignColumn[entity.FieldDataType] = "string"
+	// 		newForeignColumn[entity.FieldColumnCode] = foreignColumName
+	// 		newForeignColumn[entity.FieldColumnName] = foreignColumName
+	// 		newForeignColumn[entity.FieldCompleteColumnCode] = fmt.Sprintf("%v", foreignColumName)
 
-			columns = append(columns, newForeignColumn)
-		}
-	}
+	// 		columns = append(columns, newForeignColumn)
+	// 	}
+	// }
 
 	// filter columns if request.Fields is not empty
 	if len(request.Fields) > 0 {
