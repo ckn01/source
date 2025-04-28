@@ -365,7 +365,6 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 		foreignTableResuls[foreignTable] = itemMap
 	}
 
-	// fmt.Printf("foreignTableResuls: %+v", foreignTableResuls)
 	for i, items := range results.Items {
 		for j, item := range items {
 			if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
@@ -383,7 +382,22 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 func (uc *catalogUsecase) GetObjectDetail(ctx context.Context, request entity.CatalogQuery, serial string) (resp map[string]entity.DataItem, err error) {
 	request.Serial = serial
 
-	return uc.catalogRepo.GetObjectDetail(ctx, request)
+	resp, err = uc.catalogRepo.GetObjectDetail(ctx, request)
+	if err != nil {
+		return resp, err
+	}
+
+	for j, item := range resp {
+		if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
+			// handle display value logic here
+			// room for improvement: replace hardcoded __name with display value from catalog
+			item.DisplayValue = resp[fmt.Sprintf("%v__name", j)].Value
+
+			resp[j] = item
+		}
+	}
+
+	return
 }
 
 func (uc *catalogUsecase) GetDataByRawQuery(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error) {

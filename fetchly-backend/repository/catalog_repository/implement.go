@@ -88,8 +88,8 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 		_, foreignFieldNameOK := column["foreign_field_name"]
 
 		if foreignTableNameOK && foreignFieldNameOK {
-			// 		// append foreign name display field into select
-			// 		// TODO: make _name dynamic
+			// append foreign name display field into select
+			// room for improvement: replace hardcoded __name with display value from catalog
 			newForeignColumn := make(map[string]any)
 			foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
 
@@ -241,13 +241,13 @@ func (r *repository) GetObjectDetail(ctx context.Context, request entity.Catalog
 	completeTableName := request.TenantCode + "." + request.ObjectCode
 
 	// Get list of columns
-	columnsList, columnsString, _, _, err := r.GetColumnList(ctx, request)
+	columnsList, columnsString, joinQueryMap, joinQueryOrder, err := r.GetColumnList(ctx, request)
 	if err != nil {
 		return resp, err
 	}
 
 	// get single data using serial in request
-	dataQuery := getSingleData(columnsList, columnsString, completeTableName, request)
+	dataQuery := r.getSingleData(ctx, columnsList, columnsString, completeTableName, request, joinQueryMap, joinQueryOrder)
 	rows, err := r.db.Raw(dataQuery).Rows()
 	if err != nil {
 		return resp, err
@@ -663,6 +663,7 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 							formattedValue += ", "
 						}
 					}
+
 					formattedValue += ")"
 				} else {
 					// Fallback
@@ -701,22 +702,25 @@ func buildOrderBy(request entity.CatalogQuery) string {
 	return strings.Join(orderClauses, ", ")
 }
 
-func getSingleData(columnList []map[string]interface{}, columnsString, tableName string, request entity.CatalogQuery) string {
+func (r *repository) getSingleData(ctx context.Context, columnList []map[string]interface{}, columnsString, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string) string {
 	// Start building the base query
 	query := fmt.Sprintf(`
 		SELECT %v
 		FROM %v`, columnsString, tableName)
 
 	// handle join table if any
-	for _, column := range columnList {
-		if column[entity.ForeignTable] != nil {
-			foreignTableName := column[entity.ForeignTable].(map[string]string)[entity.FieldForeignTableName]
-			foreignTableReferenceColumnName := column[entity.ForeignTable].(map[string]string)[entity.ForeignReferenceColumnName]
+	for _, joinKey := range joinQueryOrder {
+		if !strings.Contains(query, joinQueryMap[joinKey]) {
+			query = fmt.Sprintf("%s %s", query, joinQueryMap[joinKey])
+		}
+	}
 
-			joinClause := fmt.Sprintf("LEFT JOIN %v ON %v = %v.%v", foreignTableName, column[entity.FieldForeignColumnName], foreignTableName, foreignTableReferenceColumnName)
-
-			if !strings.Contains(query, joinClause) {
-				query = fmt.Sprintf("%s %s", query, joinClause)
+	// checking if filters contains join table condition
+	for _, filterGroup := range request.Filters {
+		for fieldName, filter := range filterGroup.Filters {
+			if strings.Contains(fieldName, "__") {
+				queryResult, _ := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
+				query = queryResult
 			}
 		}
 	}
@@ -735,6 +739,44 @@ func getSingleData(columnList []map[string]interface{}, columnsString, tableName
 	} else {
 		query = query + " WHERE TRUE"
 	}
+
+	// Apply dynamic filters if they exist
+	if len(request.Filters) > 0 {
+		filterString := r.buildFilters(ctx, request, tableName)
+
+		if len(filterString) > 0 {
+			query = query + " AND " + filterString
+		}
+	}
+
+	// // handle join table if any
+	// for _, column := range columnList {
+	// 	if column[entity.FieldForeignTableName] != nil && column[entity.FieldForeignColumnName] != nil {
+	// 		foreignTableName := column[entity.FieldForeignTableName].(string)
+	// 		foreignFieldName := column[entity.FieldForeignColumnName].(string)
+
+	// 		joinClause := fmt.Sprintf("LEFT JOIN %v ON %v = %v.%v", foreignTableName, column[entity.FieldForeignColumnName], foreignTableName, foreignFieldName)
+
+	// 		if !strings.Contains(query, joinClause) {
+	// 			query = fmt.Sprintf("%s %s", query, joinClause)
+	// 		}
+	// 	}
+	// }
+
+	// // check if table has deleted_at column
+	// hasDeletedAt := false
+	// for _, column := range columnList {
+	// 	if column[entity.FieldColumnCode] == "deleted_at" {
+	// 		hasDeletedAt = true
+	// 		break
+	// 	}
+	// }
+
+	// if hasDeletedAt {
+	// 	query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
+	// } else {
+	// 	query = query + " WHERE TRUE"
+	// }
 
 	// apply serial to get single data
 	identifierColumn := entity.DEFAULT_IDENTIFIER
