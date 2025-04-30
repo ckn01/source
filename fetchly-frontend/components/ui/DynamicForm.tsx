@@ -4,6 +4,7 @@ import { toLabel } from "@/lib/utils";
 import { Save, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import AsyncSelect from "react-select/async";
 import SidebarPanel from "../SidebarPanel";
 
 interface DynamicFormProps {
@@ -108,6 +109,18 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
     }
   }, [responseData]);
 
+  const loadOptions = async (inputValue: string) => {
+    if (!inputValue) return [];
+
+    const response = await fetch(`/your-api-endpoint?q=${encodeURIComponent(inputValue)}`);
+    const data = await response.json();
+
+    return (data?.items || []).map((item: any) => ({
+      label: item["name"]?.value,
+      value: item["serial"]?.value,
+    }));
+  };
+
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
       <CardContent className="p-0 pb-0 overflow-x-auto">
@@ -177,6 +190,12 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                     }
                   }
 
+                  const defaultOptions =
+                    foreignOptions?.items?.map((item: any) => ({
+                      label: item["name"]?.value,
+                      value: item["serial"]?.value,
+                    })) || [];
+
                   return (
                     <div key={idx} className="flex flex-col">
                       <label className="text-sm font-semibold text-gray-700 mb-1">
@@ -184,18 +203,24 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                       </label>
 
                       {hasForeignRef ? (
-                        <select
+                        <AsyncSelect
+                          defaultOptions={defaultOptions}
+                          cacheOptions
+                          loadOptions={loadOptions}
+                          defaultValue={
+                            fieldValue
+                              ? { label: fieldLabel, value: fieldValue }
+                              : null
+                          }
+                          onChange={(selected) => {
+                            // You can store selected.value into form state here
+                          }}
                           name={fieldCode}
-                          value={fieldValue}
-                          className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        >
-                          <option value="">Select {fieldLabel}</option>
-                          {foreignOptions?.items?.map((option: any, optIdx: number) => (
-                            <option key={optIdx} value={option["serial"]?.value}>
-                              {option["name"]?.value}
-                            </option>
-                          ))}
-                        </select>
+                          menuPortalTarget={document.body} // this moves the dropdown outside of the card
+                          styles={{
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                        />
                       ) : isBoolean ? (
                         <label className="inline-flex items-center cursor-pointer">
                           <input
