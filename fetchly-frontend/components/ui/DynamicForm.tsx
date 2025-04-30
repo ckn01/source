@@ -250,7 +250,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                       {hasForeignRef ? (
                         <AsyncSelect
                           defaultOptions={defaultOptions}
-                          value={fieldValue}
+                          value={defaultOptions.find((opt: { value: any; }) => opt.value === fieldValue) ?? null}
                           name={fieldCode}
                           inputValue={inputValue?.[fieldCode]}
                           menuPortalTarget={document.body}
