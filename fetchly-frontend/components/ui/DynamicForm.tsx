@@ -43,6 +43,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [referenceResponseData, setReferenceResponseData] = useState<Record<string, any>>({});
+  const [flattenResponseData, setFlattenResponseData] = useState(null)
 
   const fetchData = async (page: number, referenceObjectCode: string) => {
     try {
@@ -99,6 +100,14 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
     }
   }, [referenceResponseData]);
 
+  useEffect(() => {
+    const data = responseData;
+    if (data) {
+      // Do something with the new data
+      console.log("responseData", responseData);
+    }
+  }, [responseData]);
+
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
       <CardContent className="p-0 pb-0 overflow-x-auto">
@@ -143,9 +152,9 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                 .map((field: any, idx: number) => {
                   const fieldCode = field.field_code;
                   const fieldLabel = field.field_name || toLabel(fieldCode);
-                  const fieldValue = responseData?.data?.[fieldCode] ?? "";
-                  const fieldType = field.data_type || "text";
 
+                  let fieldValue = responseData?.[fieldCode]?.value;
+                  const fieldType = field.data_type || "text";
                   const isBoolean = fieldType === "Bool";
 
                   const hasForeignRef = field.foreign_table_name && field.foreign_field_name;
@@ -155,7 +164,18 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
 
                   let inputType = "text";
                   if (fieldType === "Date") inputType = "date";
+                  else if (fieldType === "DateTime" || fieldType === "Timestamptz") inputType = "datetime-local";
                   else if (fieldType === "Number") inputType = "number";
+
+                  if (inputType === "date") {
+                    if (typeof fieldValue === "string" && fieldValue.trim() !== "") {
+                      const dateValue = new Date(fieldValue);
+                      if (!isNaN(dateValue.getTime())) {
+                        const formattedDate = dateValue.toISOString().split("T")[0];
+                        fieldValue = formattedDate;
+                      }
+                    }
+                  }
 
                   return (
                     <div key={idx} className="flex flex-col">
@@ -166,7 +186,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                       {hasForeignRef ? (
                         <select
                           name={fieldCode}
-                          defaultValue={fieldValue}
+                          value={fieldValue}
                           className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         >
                           <option value="">Select {fieldLabel}</option>
@@ -181,8 +201,11 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                           <input
                             type="checkbox"
                             name={fieldCode}
-                            defaultChecked={Boolean(fieldValue)}
+                            checked={Boolean(fieldValue)}
                             className="sr-only peer"
+                            onChange={(e => {
+                              // handle change event here
+                            })}
                           />
                           <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
                         </label>
