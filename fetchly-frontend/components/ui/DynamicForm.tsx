@@ -48,6 +48,8 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
   const [currentReferenceObjectCode, setCurrentReferenceObjectCode] = useState<string>("");
   const [inputValue, setInputValue] = useState<Record<string, string | undefined>>({});
   const [defaultOptions, setDefaultOptions] = useState<Record<string, any>>({});
+  const [localResponseData, setLocalResponseData] = useState<Record<string, any>>(responseData);
+  const [localViewComponent, setLocalViewComponent] = useState<any>(viewComponent)
 
   const fetchData = async (page: number, referenceObjectCode: string, filters: any) => {
     try {
@@ -80,22 +82,21 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
         ...prevData,
         [referenceObjectCode]: data.data,
       }));
-      setIsLoading(false);
     } catch (error) {
       console.error("Data API error:", error);
     }
   };
 
   useEffect(() => {
-    if (tenantCode && productCode && objectCode && viewContentCode) {
-      viewComponent.props?.fields?.map((field: any, idx: number) => {
+    if (tenantCode && productCode && objectCode && viewContentCode && localViewComponent) {
+      localViewComponent.props?.fields?.map((field: any, idx: number) => {
         // checking if field.foreign_table_name and field.foreign_field_name exist
         if (field.foreign_table_name && field.foreign_field_name) {
           fetchData(1, field.foreign_table_name, null);
         }
       })
     }
-  }, [tenantCode, productCode, objectCode, viewContentCode]);
+  }, [tenantCode, productCode, objectCode, viewContentCode, localViewComponent]);
 
   useEffect(() => {
     const data = referenceResponseData;
@@ -106,7 +107,14 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
   }, [referenceResponseData]);
 
   useEffect(() => {
-    const data = responseData;
+    if (responseData) {
+      setLocalResponseData(responseData);
+      setIsLoading(false);
+    }
+  }, [responseData]);
+
+  useEffect(() => {
+    const data = localResponseData;
     if (data) {
       // Do something with the new data
       for (const key in data) {
@@ -117,8 +125,10 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
           }))
         }
       }
+
+      console.log("current local data", data)
     }
-  }, [responseData]);
+  }, [localResponseData]);
 
   useEffect(() => {
     if (inputValue) {
@@ -154,6 +164,12 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
       <CardContent className="p-0 pb-0 overflow-x-auto">
+        {isLoading && (
+          <div className="absolute top-0 left-0 w-full h-full bg-white/60 flex items-center justify-center z-10">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        )}
+
         <div className="flex justify-end gap-0 mb-2">
           <button
             className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-4 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
@@ -186,21 +202,21 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
         <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 m-2">
           <CardContent className="p-4 overflow-x-auto">
             <form className="space-y-4">
-              {viewComponent?.props?.fields
+              {localViewComponent?.props?.fields
                 ?.filter((field: any) => {
                   const isMetadata = metadataColumnList.includes(field.field_code);
                   const hasDoubleUnderscore = field.field_code.includes("__");
                   return !isMetadata && !hasDoubleUnderscore;
                 })
                 .map((field: any, idx: number) => {
+                  const hasForeignRef = field.foreign_table_name && field.foreign_field_name;
                   const fieldCode = field.field_code;
                   const fieldLabel = field.field_name || toLabel(fieldCode);
 
-                  let fieldValue = responseData?.[fieldCode]?.value;
+                  let fieldValue = localResponseData?.[fieldCode]?.value;
                   const fieldType = field.data_type || "text";
                   const isBoolean = fieldType === "Bool";
 
-                  const hasForeignRef = field.foreign_table_name && field.foreign_field_name;
                   const foreignOptions = hasForeignRef
                     ? referenceResponseData?.[field.foreign_table_name] || []
                     : [];
@@ -234,7 +250,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                       {hasForeignRef ? (
                         <AsyncSelect
                           defaultOptions={defaultOptions}
-                          defaultValue={fieldValue}
+                          value={fieldValue}
                           name={fieldCode}
                           inputValue={inputValue?.[fieldCode]}
                           menuPortalTarget={document.body}
@@ -243,6 +259,14 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                           isSearchable={true}
                           onChange={(selected) => {
                             // handle selected item
+                            setLocalResponseData((prevData) => ({
+                              ...prevData,
+                              [fieldCode]: {
+                                ...localResponseData[fieldCode],
+                                value: selected.value,
+                                display_value: selected.label
+                              },
+                            }))
                           }}
                           onInputChange={(newValue: string) => {
                             setInputValue((prevData) => ({
@@ -258,11 +282,19 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                             name={fieldCode}
                             checked={Boolean(fieldValue)}
                             className="sr-only peer"
-                            onChange={(e => {
+                            onChange={(e) => {
                               // handle change event here
-                            })}
+                              setLocalResponseData((prevData) => ({
+                                ...prevData,
+                                [fieldCode]: {
+                                  ...localResponseData[fieldCode],
+                                  value: e.target.checked,
+                                  display_value: e.target.checked
+                                },
+                              }))
+                            }}
                           />
-                          <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
+                          <div className="w-16 h-9 bg-gray-300 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[-2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-8 after:w-8 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
                         </label>
                       ) : (
                         <input
@@ -270,6 +302,16 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                           name={fieldCode}
                           defaultValue={fieldValue}
                           className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          onChange={(e) => {
+                            setLocalResponseData((prevData) => ({
+                              ...prevData,
+                              [fieldCode]: {
+                                ...localResponseData[fieldCode],
+                                value: e.target.value,
+                                display_value: e.target.value
+                              },
+                            }))
+                          }}
                         />
                       )}
                     </div>

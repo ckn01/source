@@ -273,7 +273,7 @@ func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entit
 
 	switch resp.ViewContent.LayoutType {
 	case "record", "detail", "form":
-		catalogQuery.RemoveDotColumn = true
+		catalogQuery.IsForLayout = true
 		originalFields, _, _, _, err := uc.catalogRepo.GetColumnList(ctx, catalogQuery)
 		if err != nil {
 			return resp, err

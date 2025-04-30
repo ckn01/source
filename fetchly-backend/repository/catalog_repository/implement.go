@@ -175,7 +175,7 @@ func (r *repository) handleJoinColumn(
 	foreignColumnName := fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, foreignFieldSet[0])
 	referenceColumnName := foreignFieldSet[1]
 
-	if _, ok := joinQueryMap[fieldNameKey]; ok && !request.RemoveDotColumn {
+	if _, ok := joinQueryMap[fieldNameKey]; ok && !request.IsForLayout {
 		fieldNameKeyList := strings.Split(fieldNameKey, "__")
 		destinationColumn := fieldNameKeyList[len(fieldNameKeyList)-1]
 
