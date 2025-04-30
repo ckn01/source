@@ -187,6 +187,7 @@ type CatalogQuery struct {
 	ProductSerial   string           `json:"product_serial"`
 	RawQuery        string           `json:"raw_query"`
 	ViewContentCode string           `json:"view_content_code"`
+	RemoveDotColumn bool             `json:"remove_dot_column"`
 }
 
 type DataItem struct {
