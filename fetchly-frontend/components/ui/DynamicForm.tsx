@@ -45,8 +45,11 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [referenceResponseData, setReferenceResponseData] = useState<Record<string, any>>({});
   const [flattenResponseData, setFlattenResponseData] = useState(null)
+  const [currentReferenceObjectCode, setCurrentReferenceObjectCode] = useState<string>("");
+  const [inputValue, setInputValue] = useState<Record<string, string | undefined>>({});
+  const [defaultOptions, setDefaultOptions] = useState<Record<string, any>>({});
 
-  const fetchData = async (page: number, referenceObjectCode: string) => {
+  const fetchData = async (page: number, referenceObjectCode: string, filters: any) => {
     try {
       setIsLoading(true)
 
@@ -56,6 +59,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
           method: APIMethod.POST,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            filters: filters,
             page: page ? page : 1,
             page_size: 20,
             object_code: referenceObjectCode,
@@ -87,7 +91,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
       viewComponent.props?.fields?.map((field: any, idx: number) => {
         // checking if field.foreign_table_name and field.foreign_field_name exist
         if (field.foreign_table_name && field.foreign_field_name) {
-          fetchData(1, field.foreign_table_name);
+          fetchData(1, field.foreign_table_name, null);
         }
       })
     }
@@ -97,7 +101,7 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
     const data = referenceResponseData;
     if (data) {
       // Do something with the new data
-      console.log("Updated data for referenceResponseData", data);
+
     }
   }, [referenceResponseData]);
 
@@ -105,20 +109,46 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
     const data = responseData;
     if (data) {
       // Do something with the new data
-      console.log("responseData", responseData);
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          setInputValue((prevData) => ({
+            ...prevData,
+            [key]: data[key]?.display_value,
+          }))
+        }
+      }
     }
   }, [responseData]);
 
-  const loadOptions = async (inputValue: string) => {
-    if (!inputValue) return [];
+  useEffect(() => {
+    if (inputValue) {
+      // Do something with the new data
+      console.log("inputValue", inputValue)
+    }
+  }, [inputValue]);
 
-    const response = await fetch(`/your-api-endpoint?q=${encodeURIComponent(inputValue)}`);
-    const data = await response.json();
+  const createLoadOptions = (referenceObjectCode: string) => {
+    return async (inputValue: string) => {
+      if (!inputValue) return [];
 
-    return (data?.items || []).map((item: any) => ({
-      label: item["name"]?.value,
-      value: item["serial"]?.value,
-    }));
+      const filters = [{
+        operator: "AND",
+        filter_item: {
+          name: {
+            operator: "contains",
+            value: inputValue
+          }
+        }
+      }];
+
+      await fetchData(1, referenceObjectCode, filters);
+      const data = referenceResponseData?.[referenceObjectCode];
+
+      return (data?.items || []).map((item: any) => ({
+        label: item["name"]?.value,
+        value: item["serial"]?.value,
+      }));
+    };
   };
 
   return (
@@ -190,11 +220,10 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                     }
                   }
 
-                  const defaultOptions =
-                    foreignOptions?.items?.map((item: any) => ({
-                      label: item["name"]?.value,
-                      value: item["serial"]?.value,
-                    })) || [];
+                  const defaultOptions = foreignOptions?.items?.map((item: any) => ({
+                    label: item["name"]?.value,
+                    value: item["serial"]?.value,
+                  })) || [];
 
                   return (
                     <div key={idx} className="flex flex-col">
@@ -205,20 +234,21 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                       {hasForeignRef ? (
                         <AsyncSelect
                           defaultOptions={defaultOptions}
-                          cacheOptions
-                          loadOptions={loadOptions}
-                          defaultValue={
-                            fieldValue
-                              ? { label: fieldLabel, value: fieldValue }
-                              : null
-                          }
-                          onChange={(selected) => {
-                            // You can store selected.value into form state here
-                          }}
+                          defaultValue={fieldValue}
                           name={fieldCode}
-                          menuPortalTarget={document.body} // this moves the dropdown outside of the card
-                          styles={{
-                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          inputValue={inputValue?.[fieldCode]}
+                          menuPortalTarget={document.body}
+                          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                          isClearable={true}
+                          isSearchable={true}
+                          onChange={(selected) => {
+                            // handle selected item
+                          }}
+                          onInputChange={(newValue: string) => {
+                            setInputValue((prevData) => ({
+                              ...prevData,
+                              [fieldCode]: newValue,
+                            }))
                           }}
                         />
                       ) : isBoolean ? (
@@ -246,8 +276,6 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                   );
                 })}
             </form>
-
-
           </CardContent>
         </Card>
         {/* main content section ends */}

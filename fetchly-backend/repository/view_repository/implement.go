@@ -86,7 +86,7 @@ func (r *repository) GetViewContentByKeys(ctx context.Context, request entity.Ge
 		return nil, err
 	}
 
-	// Prepare the resul
+	// Prepare the result
 	var columnsList []map[string]any
 	for i, colName := range columnNames {
 		columnInfo := map[string]any{

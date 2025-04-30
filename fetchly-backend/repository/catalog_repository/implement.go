@@ -83,24 +83,24 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 		columns = append(columns, column)
 	}
 
-	// for _, column := range columns {
-	// 	_, foreignTableNameOK := column["foreign_table_name"]
-	// 	_, foreignFieldNameOK := column["foreign_field_name"]
+	for _, column := range columns {
+		_, foreignTableNameOK := column["foreign_table_name"]
+		_, foreignFieldNameOK := column["foreign_field_name"]
 
-	// 	if foreignTableNameOK && foreignFieldNameOK {
-	// 		// append foreign name display field into select
-	// 		// room for improvement: replace hardcoded __name with display value from catalog
-	// 		newForeignColumn := make(map[string]any)
-	// 		foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
+		if foreignTableNameOK && foreignFieldNameOK {
+			// append foreign name display field into select
+			// room for improvement: replace hardcoded __name with display value from catalog
+			newForeignColumn := make(map[string]any)
+			foreignColumName := fmt.Sprintf("%v__name", column["field_code"])
 
-	// 		newForeignColumn[entity.FieldDataType] = "string"
-	// 		newForeignColumn[entity.FieldColumnCode] = foreignColumName
-	// 		newForeignColumn[entity.FieldColumnName] = foreignColumName
-	// 		newForeignColumn[entity.FieldCompleteColumnCode] = fmt.Sprintf("%v", foreignColumName)
+			newForeignColumn[entity.FieldDataType] = "string"
+			newForeignColumn[entity.FieldColumnCode] = foreignColumName
+			newForeignColumn[entity.FieldColumnName] = foreignColumName
+			newForeignColumn[entity.FieldCompleteColumnCode] = fmt.Sprintf("%v", foreignColumName)
 
-	// 		columns = append(columns, newForeignColumn)
-	// 	}
-	// }
+			columns = append(columns, newForeignColumn)
+		}
+	}
 
 	// filter columns if request.Fields is not empty
 	if len(request.Fields) > 0 {
@@ -119,45 +119,7 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 				}
 			} else {
 				// handle fieldName that has double underscore this indicates that it is a relationship field
-				foreignFieldSet := strings.Split(fieldNameKey, "__")
-				_, joinQueryMap := r.HandleChainingJoinQuery(ctx, "", fieldNameKey, fmt.Sprintf("%v.%v", request.TenantCode, request.ObjectCode), request, entity.FilterItem{})
-
-				// append joinQueryMap to joinQueryMapAll
-				for k, v := range joinQueryMap {
-					joinQueryMapAll[k] = v
-					joinQueryOrderAll = append(joinQueryOrderAll, k)
-				}
-
-				// split fieldName by double underscore
-				foreignColumnName := fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, foreignFieldSet[0])
-				referenceColumnName := foreignFieldSet[1]
-
-				if _, ok := joinQueryMap[fieldNameKey]; ok {
-					fieldNameKeyList := strings.Split(fieldNameKey, "__")
-					destinationColumn := fieldNameKeyList[len(fieldNameKeyList)-1]
-
-					fieldName := fmt.Sprintf("%v.%v", fieldNameKey, destinationColumn)
-					fieldCode := fieldName
-
-					if val := request.Fields[fieldNameKey].FieldName; val != "" {
-						fieldName = val
-					}
-
-					filteredColumn := map[string]any{
-						entity.FieldOriginalFieldCode:  fieldNameKey,
-						entity.FieldCompleteColumnCode: fieldCode,
-						entity.FieldColumnCode:         fieldCode,
-						entity.FieldColumnName:         fieldName,
-						entity.FieldForeignColumnName:  foreignColumnName,
-						entity.FieldDataType:           "text",
-						entity.ForeignTable: map[string]string{
-							entity.FieldForeignColumnName: referenceColumnName,
-						},
-					}
-
-					filteredColumns = append(filteredColumns, filteredColumn)
-				}
-
+				r.handleJoinColumn(ctx, request, fieldNameKey, &joinQueryMapAll, &joinQueryOrderAll, &filteredColumns)
 				isFound = true
 			}
 
@@ -168,18 +130,76 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 		}
 
 		columns = filteredColumns
+	} else {
+		for _, col := range columns {
+			completeFieldCode := col[entity.FieldCompleteColumnCode].(string)
+			if strings.Contains(completeFieldCode, "__") {
+				r.handleJoinColumn(ctx, request, completeFieldCode, &joinQueryMapAll, &joinQueryOrderAll, &columns)
+			}
+		}
 	}
 
 	// convert columns to string
 	for i, col := range columns {
+		completeFieldCode := col[entity.FieldCompleteColumnCode].(string)
+
+		// convert into columnStrings
 		if i == 0 {
-			columnStrings = col[entity.FieldCompleteColumnCode].(string)
+			columnStrings = completeFieldCode
 		} else {
-			columnStrings = columnStrings + ", " + col[entity.FieldCompleteColumnCode].(string)
+			columnStrings = columnStrings + ", " + completeFieldCode
 		}
 	}
 
 	return columns, columnStrings, joinQueryMapAll, joinQueryOrderAll, err
+}
+
+func (r *repository) handleJoinColumn(
+	ctx context.Context,
+	request entity.CatalogQuery,
+	fieldNameKey string,
+	joinQueryMapAll *map[string]string,
+	joinQueryOrderAll *[]string,
+	filteredColumns *[]map[string]any,
+) {
+	foreignFieldSet := strings.Split(fieldNameKey, "__")
+	_, joinQueryMap := r.HandleChainingJoinQuery(ctx, "", fieldNameKey, fmt.Sprintf("%v.%v", request.TenantCode, request.ObjectCode), request, entity.FilterItem{})
+
+	// append joinQueryMap to joinQueryMapAll
+	for k, v := range joinQueryMap {
+		(*joinQueryMapAll)[k] = v
+		*joinQueryOrderAll = append(*joinQueryOrderAll, k)
+	}
+
+	// split fieldName by double underscore
+	foreignColumnName := fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, foreignFieldSet[0])
+	referenceColumnName := foreignFieldSet[1]
+
+	if _, ok := joinQueryMap[fieldNameKey]; ok {
+		fieldNameKeyList := strings.Split(fieldNameKey, "__")
+		destinationColumn := fieldNameKeyList[len(fieldNameKeyList)-1]
+
+		fieldName := fmt.Sprintf("%v.%v", fieldNameKey, destinationColumn)
+		fieldCode := fieldName
+
+		if val := request.Fields[fieldNameKey].FieldName; val != "" {
+			fieldName = val
+		}
+
+		filteredColumn := map[string]any{
+			entity.FieldOriginalFieldCode:  fieldNameKey,
+			entity.FieldCompleteColumnCode: fieldCode,
+			entity.FieldColumnCode:         fieldCode,
+			entity.FieldColumnName:         fieldName,
+			entity.FieldForeignColumnName:  foreignColumnName,
+			entity.FieldDataType:           "text",
+			entity.ForeignTable: map[string]string{
+				entity.FieldForeignColumnName: referenceColumnName,
+			},
+		}
+
+		*filteredColumns = append(*filteredColumns, filteredColumn)
+	}
 }
 
 func (r *repository) GetObjectData(ctx context.Context, request entity.CatalogQuery) (resp entity.CatalogResponse, err error) {
