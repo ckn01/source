@@ -254,7 +254,17 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                           name={fieldCode}
                           inputValue={inputValue?.[fieldCode]}
                           menuPortalTarget={document.body}
-                          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                          styles={{
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            control: (base) => ({
+                              ...base,
+                              padding: '4px 4px',
+                              borderRadius: '1rem',
+                              borderColor: "#9ca3af",
+                              minHeight: '48px',
+                              fontSize: '14px',
+                            }),
+                          }}
                           isClearable={true}
                           isSearchable={true}
                           onChange={(selected) => {
@@ -294,14 +304,14 @@ export default function DynamicForm({ index, viewComponent, viewLayout, response
                               }))
                             }}
                           />
-                          <div className="w-16 h-9 bg-gray-300 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[-2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-8 after:w-8 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
+                          <div className="w-16 h-9 bg-gray-400 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[-2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-8 after:w-8 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
                         </label>
                       ) : (
                         <input
                           type={inputType}
                           name={fieldCode}
                           defaultValue={fieldValue}
-                          className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="border border-gray-400 rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"
                           onChange={(e) => {
                             setLocalResponseData((prevData) => ({
                               ...prevData,
