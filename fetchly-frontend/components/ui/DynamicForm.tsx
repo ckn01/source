@@ -1,4 +1,4 @@
-import { dashboardConfig } from "@/app/appConfig";
+import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
 import { Save, X } from "lucide-react";
@@ -8,6 +8,7 @@ import SidebarPanel from "../SidebarPanel";
 
 interface DynamicFormProps {
   index: number;
+  viewComponent: any;
   viewLayout: any;
   responseData: any;
 }
@@ -31,7 +32,7 @@ const metadataColumnList = [
   "id"
 ]
 
-export default function DynamicForm({ index, viewLayout, responseData }: DynamicFormProps) {
+export default function DynamicForm({ index, viewComponent, viewLayout, responseData }: DynamicFormProps) {
   const params = useParams<RouteParams>();
   const {
     tenantCode = dashboardConfig.defaultTenantCode,
@@ -39,13 +40,64 @@ export default function DynamicForm({ index, viewLayout, responseData }: Dynamic
     objectCode = dashboardConfig.defaultObjectCode,
     viewContentCode = dashboardConfig.defaultViewContentCode,
   } = params;
+  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [referenceResponseData, setReferenceResponseData] = useState<Record<string, any>>({});
+
+  const fetchData = async (page: number, referenceObjectCode: string) => {
+    try {
+      setIsLoading(true)
+
+      const dataResponse = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${referenceObjectCode}/view/${viewContentCode}/data`,
+        {
+          method: APIMethod.POST,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            page: page ? page : 1,
+            page_size: 20,
+            object_code: referenceObjectCode,
+            tenant_code: tenantCode,
+            product_code: productCode,
+            view_content_code: viewContentCode,
+          })
+        }
+      );
+
+      if (!dataResponse.ok) {
+        throw new Error("Failed to fetch data");
+      }
+
+      const data = await dataResponse.json();
+
+      setReferenceResponseData((prevData) => ({
+        ...prevData,
+        [referenceObjectCode]: data.data,
+      }));
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Data API error:", error);
+    }
+  };
 
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
-
+      viewComponent.props?.fields?.map((field: any, idx: number) => {
+        // checking if field.foreign_table_name and field.foreign_field_name exist
+        if (field.foreign_table_name && field.foreign_field_name) {
+          fetchData(1, field.foreign_table_name);
+        }
+      })
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
+
+  useEffect(() => {
+    const data = referenceResponseData;
+    if (data) {
+      // Do something with the new data
+      console.log("Updated data for referenceResponseData", data);
+    }
+  }, [referenceResponseData]);
 
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
@@ -82,7 +134,7 @@ export default function DynamicForm({ index, viewLayout, responseData }: Dynamic
         <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 m-2">
           <CardContent className="p-4 overflow-x-auto">
             <form className="space-y-4">
-              {viewLayout?.children?.[0]?.props?.fields
+              {viewComponent?.props?.fields
                 ?.filter((field: any) => {
                   const isMetadata = metadataColumnList.includes(field.field_code);
                   const hasDoubleUnderscore = field.field_code.includes("__");
@@ -94,11 +146,16 @@ export default function DynamicForm({ index, viewLayout, responseData }: Dynamic
                   const fieldValue = responseData?.data?.[fieldCode] ?? "";
                   const fieldType = field.data_type || "text";
 
+                  const isBoolean = fieldType === "Bool";
+
+                  const hasForeignRef = field.foreign_table_name && field.foreign_field_name;
+                  const foreignOptions = hasForeignRef
+                    ? referenceResponseData?.[field.foreign_table_name] || []
+                    : [];
+
                   let inputType = "text";
                   if (fieldType === "Date") inputType = "date";
                   else if (fieldType === "Number") inputType = "number";
-
-                  const isBoolean = fieldType === "Bool";
 
                   return (
                     <div key={idx} className="flex flex-col">
@@ -106,7 +163,20 @@ export default function DynamicForm({ index, viewLayout, responseData }: Dynamic
                         {fieldLabel}
                       </label>
 
-                      {isBoolean ? (
+                      {hasForeignRef ? (
+                        <select
+                          name={fieldCode}
+                          defaultValue={fieldValue}
+                          className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        >
+                          <option value="">Select {fieldLabel}</option>
+                          {foreignOptions?.items?.map((option: any, optIdx: number) => (
+                            <option key={optIdx} value={option["serial"]?.value}>
+                              {option["name"]?.value}
+                            </option>
+                          ))}
+                        </select>
+                      ) : isBoolean ? (
                         <label className="inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -128,6 +198,7 @@ export default function DynamicForm({ index, viewLayout, responseData }: Dynamic
                   );
                 })}
             </form>
+
 
           </CardContent>
         </Card>

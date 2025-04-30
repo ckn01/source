@@ -198,7 +198,9 @@ export default function DynamicPageEdit() {
             if (child.type === "form") {
               return (
                 <DynamicForm
+                  key={index}
                   index={index}
+                  viewComponent={child}
                   viewLayout={viewLayout}
                   responseData={responseData}
                 />

@@ -355,9 +355,7 @@ export default function DynamicPage() {
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/record`,
         {
           method: APIMethod.POST,
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
         }
       );
@@ -411,9 +409,7 @@ export default function DynamicPage() {
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
         {
           method: APIMethod.POST,
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fields: layoutData.layout?.children?.[0]?.props?.fields?.reduce((acc: any, field: any) => {
               acc[field.field_code] = field;
