@@ -13,84 +13,84 @@ import (
 type Tenants struct {
 	ID           int            `gorm:"column:id" json:"id"`
 	Serial       string         `gorm:"column:serial" json:"serial"`
-	Code         string         `gorm:"column:code" json:"code"`
-	Name         string         `gorm:"column:name" json:"name"`
 	CreatedBy    string         `gorm:"column:created_by" json:"created_by"`
 	CreatedAt    time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedBy    string         `gorm:"column:updated_by" json:"updated_by"`
 	UpdatedAt    time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedBy    sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
 	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	Code         string         `gorm:"column:code" json:"code"`
+	Name         string         `gorm:"column:name" json:"name"`
 	TenantConfig map[string]any `gorm:"column:tenant_config" json:"tenant_config"`
 }
 
 type DataSource struct {
-	ID           int                    `gorm:"column:id" json:"id"`
-	Serial       string                 `gorm:"column:serial" json:"serial"`
-	Code         string                 `gorm:"column:code" json:"code"`
-	Name         string                 `gorm:"column:name" json:"name"`
-	Description  string                 `gorm:"column:description" json:"description"`
-	Host         string                 `gorm:"column:host" json:"host"`
-	Port         string                 `gorm:"column:port" json:"port"`
-	Username     string                 `gorm:"column:username" json:"username"`
-	Password     string                 `gorm:"column:password" json:"password"`
-	DBName       string                 `gorm:"column:db_name" json:"db_name"`
-	DatabaseName string                 `gorm:"column:database_name" json:"database_name"`
-	Configs      map[string]interface{} `gorm:"column:configs" json:"configs"`
-	TenantSerial string                 `gorm:"column:tenant_serial" json:"tenant_serial"`
-	CreatedBy    string                 `gorm:"column:created_by" json:"created_by"`
-	CreatedAt    time.Time              `gorm:"column:created_at" json:"created_at"`
-	UpdatedBy    string                 `gorm:"column:updated_by" json:"updated_by"`
-	UpdatedAt    time.Time              `gorm:"column:updated_at" json:"updated_at"`
-	DeletedBy    sql.NullString         `gorm:"column:deleted_by" json:"deleted_by"`
-	DeletedAt    gorm.DeletedAt         `gorm:"column:deleted_at" json:"deleted_at"`
+	ID           int            `gorm:"column:id" json:"id"`
+	Serial       string         `gorm:"column:serial" json:"serial"`
+	CreatedBy    string         `gorm:"column:created_by" json:"created_by"`
+	CreatedAt    time.Time      `gorm:"column:created_at" json:"created_at"`
+	UpdatedBy    string         `gorm:"column:updated_by" json:"updated_by"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at" json:"updated_at"`
+	DeletedBy    sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
+	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	Code         string         `gorm:"column:code" json:"code"`
+	Name         string         `gorm:"column:name" json:"name"`
+	Description  string         `gorm:"column:description" json:"description"`
+	Host         string         `gorm:"column:host" json:"host"`
+	Port         string         `gorm:"column:port" json:"port"`
+	Username     string         `gorm:"column:username" json:"username"`
+	Password     string         `gorm:"column:password" json:"password"`
+	DBName       string         `gorm:"column:db_name" json:"db_name"`
+	DatabaseName string         `gorm:"column:database_name" json:"database_name"`
+	Configs      map[string]any `gorm:"column:configs" json:"configs"`
+	TenantSerial string         `gorm:"column:tenant_serial" json:"tenant_serial"`
 }
 
 type Modules struct {
 	ID                 int            `gorm:"column:id" json:"id"`
 	Serial             string         `gorm:"column:serial" json:"serial"`
-	Code               string         `gorm:"column:code" json:"code"`
-	Name               string         `gorm:"column:name" json:"name"`
-	ParentModuleSerial string         `gorm:"column:parent_module_serial" json:"parent_module_serial"`
-	Version            string         `gorm:"column:version" json:"version"`
 	CreatedBy          string         `gorm:"column:created_by" json:"created_by"`
 	CreatedAt          time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedBy          string         `gorm:"column:updated_by" json:"updated_by"`
 	UpdatedAt          time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedBy          sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
 	DeletedAt          gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	Code               string         `gorm:"column:code" json:"code"`
+	Name               string         `gorm:"column:name" json:"name"`
+	ParentModuleSerial string         `gorm:"column:parent_module_serial" json:"parent_module_serial"`
+	Version            string         `gorm:"column:version" json:"version"`
 }
 
 type Products struct {
 	ID        int            `gorm:"column:id" json:"id"`
 	Serial    string         `gorm:"column:serial" json:"serial"`
-	Code      string         `gorm:"column:code" json:"code"`
-	Name      string         `gorm:"column:name" json:"name"`
-	IconURL   string         `gorm:"column:icon_url" json:"icon_url"`
 	CreatedBy string         `gorm:"column:created_by" json:"created_by"`
 	CreatedAt time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedBy string         `gorm:"column:updated_by" json:"updated_by"`
 	UpdatedAt time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedBy sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
 	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	Code      string         `gorm:"column:code" json:"code"`
+	Name      string         `gorm:"column:name" json:"name"`
+	IconURL   string         `gorm:"column:icon_url" json:"icon_url"`
 }
 
 type Objects struct {
 	ID               int            `gorm:"column:id" json:"id"`
 	Serial           string         `gorm:"column:serial" json:"serial"`
-	TenantSerial     string         `gorm:"column:tenant_serial" json:"tenant_serial"`
-	ModuleSerial     string         `gorm:"column:module_serial" json:"module_serial"`
-	Code             string         `gorm:"column:code" json:"code"`
-	DisplayName      string         `gorm:"column:display_name" json:"display_name"`
-	Description      string         `gorm:"column:description" json:"description"`
-	ObjectType       string         `gorm:"column:object_type" json:"object_type"`
-	DataSourceSerial string         `gorm:"column:data_source_serial" json:"data_source_serial"`
 	CreatedBy        string         `gorm:"column:created_by" json:"created_by"`
 	CreatedAt        time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedBy        string         `gorm:"column:updated_by" json:"updated_by"`
 	UpdatedAt        time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedBy        sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
 	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
+	Code             string         `gorm:"column:code" json:"code"`
+	DisplayName      string         `gorm:"column:display_name" json:"display_name"`
+	Description      string         `gorm:"column:description" json:"description"`
+	TenantSerial     string         `gorm:"column:tenant_serial" json:"tenant_serial"`
+	ModuleSerial     string         `gorm:"column:module_serial" json:"module_serial"`
+	ObjectType       string         `gorm:"column:object_type" json:"object_type"`
+	DataSourceSerial string         `gorm:"column:data_source_serial" json:"data_source_serial"`
 }
 
 func (o *Objects) ToEntity() entity.Objects {
@@ -110,6 +110,12 @@ func (o *Objects) ToEntity() entity.Objects {
 type ObjectFields struct {
 	ID                      int            `gorm:"column:id" json:"id"`
 	Serial                  string         `gorm:"column:serial" json:"serial"`
+	CreatedBy               string         `gorm:"column:created_by" json:"created_by"`
+	CreatedAt               time.Time      `gorm:"column:created_at" json:"created_at"`
+	UpdatedBy               string         `gorm:"column:updated_by" json:"updated_by"`
+	UpdatedAt               time.Time      `gorm:"column:updated_at" json:"updated_at"`
+	DeletedBy               sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
+	DeletedAt               gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
 	ObjectSerial            string         `gorm:"column:object_serial" json:"object_serial"`
 	FieldCode               string         `gorm:"column:field_code" json:"field_code"`
 	IsDisplayName           bool           `gorm:"column:is_display_name" json:"is_display_name"`
@@ -122,12 +128,6 @@ type ObjectFields struct {
 	TargetObjectFieldSerial string         `gorm:"column:target_object_field_serial" json:"target_object_field_serial"`
 	Relation                string         `gorm:"column:relation" json:"relation"`
 	IsSystem                bool           `gorm:"column:is_system" json:"is_system"`
-	CreatedBy               string         `gorm:"column:created_by" json:"created_by"`
-	CreatedAt               time.Time      `gorm:"column:created_at" json:"created_at"`
-	UpdatedBy               string         `gorm:"column:updated_by" json:"updated_by"`
-	UpdatedAt               time.Time      `gorm:"column:updated_at" json:"updated_at"`
-	DeletedBy               sql.NullString `gorm:"column:deleted_by" json:"deleted_by"`
-	DeletedAt               gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at"`
 }
 
 func (of *ObjectFields) TableName() string {
