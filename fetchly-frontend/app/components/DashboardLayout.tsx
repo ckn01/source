@@ -1,11 +1,13 @@
 "use client"; // Client component for interactivity
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { AnimatePresence, motion } from "framer-motion";
 import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
+
 
 // Props for the DashboardLayout component
 interface DashboardLayoutProps {
@@ -205,24 +207,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           </span>
                         )}
                       </button>
-                      {expanded[item.path] && (
-                        <ul className="pl-0">
-                          {item.children.map((child: { title: string; url: string }) => (
-                            <li key={child.title}>
-                              <Link
-                                href={`/${tenantCode}/${productCode}${child.url}`}
-                                className={`flex items-center gap-x-2 p-4 pl-8 transition-colors text-base 
-                                  ${pathname === `/${tenantCode}/${productCode}${child.url}`
+                      <AnimatePresence initial={false}>
+                        {expanded[item.path] && (
+                          <motion.ul
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                            className="pl-0 overflow-hidden"
+                          >
+                            {item.children.map((child: { title: string; url: string }) => (
+                              <li key={child.title}>
+                                <Link
+                                  href={`/${tenantCode}/${productCode}${child.url}`}
+                                  className={`flex items-center gap-x-2 p-4 pl-8 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
                                     ? "hover:bg-amber-600 bg-amber-700 font-semibold text-white"
                                     : "hover:bg-amber-600 text-amber-100"}`}
-                              >
-                                <LucideIcon className="w-5 h-5" />
-                                {isSidebarOpen ? child.title : child.title.charAt(0)}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                                >
+                                  <LucideIcon className="w-5 h-5" />
+                                  {isSidebarOpen ? child.title : child.title.charAt(0)}
+                                </Link>
+                              </li>
+                            ))}
+                          </motion.ul>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ) : (
                     <Link

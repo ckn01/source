@@ -21,19 +21,24 @@ type HTTPHandler interface {
 	GetContentLayoutByKeys(c *gin.Context)
 	CreateObjectData(c *gin.Context)
 	UpdateObjectData(c *gin.Context)
+	Login(c *gin.Context)
+	RefreshToken(c *gin.Context)
+	EncryptPassword(c *gin.Context)
 }
 
 type httpHandler struct {
 	cfg       config.Config
 	catalogUc module.CatalogUsecase
 	viewUc    module.ViewUsecase
+	authUc    module.AuthUsecase
 }
 
-func NewHTTPHandler(cfg config.Config, catalogUc module.CatalogUsecase, viewUc module.ViewUsecase) HTTPHandler {
+func NewHTTPHandler(cfg config.Config, catalogUc module.CatalogUsecase, viewUc module.ViewUsecase, authUc module.AuthUsecase) HTTPHandler {
 	return &httpHandler{
 		cfg:       cfg,
 		catalogUc: catalogUc,
 		viewUc:    viewUc,
+		authUc:    authUc,
 	}
 }
 
@@ -306,6 +311,106 @@ func (h *httpHandler) UpdateObjectData(c *gin.Context) {
 		log.Println(statusMessage)
 		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
 		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) Login(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	request := entity.LoginRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		statusCode = http.StatusBadRequest
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	if c.Param(entity.TENANT_CODE) != "" {
+		request.TenantCode = c.Param(entity.TENANT_CODE)
+	}
+
+	if c.Param(entity.PRODUCT_CODE) != "" {
+		request.ProductCode = c.Param(entity.PRODUCT_CODE)
+	}
+
+	response, err := h.authUc.Login(c, request)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) RefreshToken(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	request := entity.RefreshTokenRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		statusCode = http.StatusBadRequest
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	response, err := h.authUc.RefreshToken(c, request.RefreshToken)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) EncryptPassword(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	request := entity.EncryptPasswordRequest{}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		statusCode = http.StatusBadRequest
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	if c.Param(entity.TENANT_CODE) != "" {
+		request.TenantCode = c.Param(entity.TENANT_CODE)
+	}
+
+	cipherTextB64, saltB64, ivB64, err := h.authUc.EncryptPassword(c, request.TenantCode, request.PlainPassword)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	response := entity.EncryptPasswordResponse{
+		CipherText: cipherTextB64,
+		Salt:       saltB64,
+		Iv:         ivB64,
 	}
 
 	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)

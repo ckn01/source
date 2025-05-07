@@ -8,6 +8,7 @@ import (
 	"github.com/fetchlydev/source/fetchly-backend/core/module"
 	"github.com/fetchlydev/source/fetchly-backend/handler/api"
 	"github.com/fetchlydev/source/fetchly-backend/pkg/conn"
+	authrepository "github.com/fetchlydev/source/fetchly-backend/repository/auth_repository"
 	catalogrepository "github.com/fetchlydev/source/fetchly-backend/repository/catalog_repository"
 	viewrepository "github.com/fetchlydev/source/fetchly-backend/repository/view_repository"
 
@@ -28,13 +29,15 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 	// repository
 	catalogRepo := catalogrepository.New(cfg, db)
 	viewRepo := viewrepository.New(db, cfg)
+	authRepo := authrepository.New(cfg, db)
 
 	// usecase
 	catalogUc := module.NewCatalogUsecase(cfg, catalogRepo, viewRepo)
 	viewUc := module.NewViewUsecase(cfg, catalogRepo, viewRepo, catalogUc)
+	authUc := module.NewAuthUsecase(cfg, authRepo, catalogRepo)
 
 	// handler
-	httpHandler := api.NewHTTPHandler(cfg, catalogUc, viewUc)
+	httpHandler := api.NewHTTPHandler(cfg, catalogUc, viewUc, authUc)
 
 	t := router.Group("t/:tenant_code")
 	{
@@ -56,6 +59,13 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 
 				o.PUT("/data", httpHandler.CreateObjectData)
 				o.PATCH("/data/:serial", httpHandler.UpdateObjectData)
+			}
+
+			util := p.Group("auth")
+			{
+				util.POST("/login", httpHandler.Login)
+				util.POST("/refresh-token", httpHandler.RefreshToken)
+				util.POST("/encrypt-password", httpHandler.EncryptPassword)
 			}
 		}
 	}

@@ -17,6 +17,7 @@ export default function ProductPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-4xl font-bold text-purple-600">Dynamic Route Page</h1>
       <div className="mt-4 text-lg text-gray-700">
+        <h1>Home</h1>
         <p>Tenant Code: <strong>{tenantCode}</strong></p>
         <p>Product Code: <strong>{productCode}</strong></p>
       </div>
