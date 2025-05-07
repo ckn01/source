@@ -33,6 +33,7 @@ type Navigation struct {
 	URL               string         `gorm:"column:url" json:"url"`
 	NavigationLevel   int32          `gorm:"column:navigation_level" json:"navigation_level"`
 	Path              string         `gorm:"column:path" json:"path"`
+	NavigationOrder   int32          `gorm:"column:navigation_order" json:"navigation_order"`
 }
 
 func (n *Navigation) ToEntity() entity.Navigation {
@@ -45,6 +46,7 @@ func (n *Navigation) ToEntity() entity.Navigation {
 		URL:             n.URL,
 		NavigationLevel: n.NavigationLevel,
 		Path:            n.Path,
+		NavigationOrder: n.NavigationOrder,
 	}
 }
 
@@ -57,4 +59,5 @@ func (n *Navigation) FromEntity(record entity.Navigation) {
 	n.URL = record.URL
 	n.NavigationLevel = record.NavigationLevel
 	n.Path = record.Path
+	n.NavigationOrder = record.NavigationOrder
 }

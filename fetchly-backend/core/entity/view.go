@@ -69,6 +69,7 @@ type Navigation struct {
 	Path            string      `json:"path"`
 	ParentCode      string      `json:"parent_code"`
 	RootCode        string      `json:"root_code"`
+	NavigationOrder int32       `json:"navigation_order"`
 }
 
 func (nav *Navigation) ConvertFlatNavigationToMap() map[string]any {
@@ -83,6 +84,7 @@ func (nav *Navigation) ConvertFlatNavigationToMap() map[string]any {
 		"path":             nav.Path,
 		"parent_code":      nav.ParentCode,
 		"root_code":        nav.RootCode,
+		"navigation_order": nav.NavigationOrder,
 		"children":         []map[string]any{}, // prefill if you're going to use it for tree building
 	}
 

@@ -263,92 +263,99 @@ export default function DynamicPageAdd() {
           })}
         </div>
 
-        <div className="mt-4">
-          <button
-            onClick={() => setIsDynamicParamAccordionOpen(!isDynamicParamAccordionOpen)}
-            className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
-          >
-            <span>Dynamic Param</span>
-            <span>{isDynamicParamAccordionOpen ? "−" : "+"}</span>
-          </button>
+        {dashboardConfig.isDebugMode &&
+          <Card className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-4 mt-4">
+            <CardContent className="p-4 pb-0 overflow-x-auto">
 
-          {isDynamicParamAccordionOpen && (
-            <pre className="mt-2 bg-gray-200 text-sm p-4 rounded overflow-auto text-gray-800">
-              <div className="space-y-3 text-gray-700">
-                <p>
-                  <span className="font-semibold">Tenant Code:</span>{" "}
-                  <span className="text-indigo-600">{tenantCode}</span>
-                </p>
-                <p>
-                  <span className="font-semibold">Product Code:</span>{" "}
-                  <span className="text-indigo-600">{productCode}</span>
-                </p>
-                <p>
-                  <span className="font-semibold">Object Code:</span>{" "}
-                  <span className="text-indigo-600">{objectCode}</span>
-                </p>
-                <p>
-                  <span className="font-semibold">View Content Code:</span>{" "}
-                  <span className="text-indigo-600">{viewContentCode}</span>
-                </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => setIsDynamicParamAccordionOpen(!isDynamicParamAccordionOpen)}
+                  className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
+                >
+                  <span>Dynamic Param</span>
+                  <span>{isDynamicParamAccordionOpen ? "−" : "+"}</span>
+                </button>
+
+                {isDynamicParamAccordionOpen && (
+                  <pre className="mt-2 bg-gray-200 text-sm p-4 rounded overflow-auto text-gray-800">
+                    <div className="space-y-3 text-gray-700">
+                      <p>
+                        <span className="font-semibold">Tenant Code:</span>{" "}
+                        <span className="text-indigo-600">{tenantCode}</span>
+                      </p>
+                      <p>
+                        <span className="font-semibold">Product Code:</span>{" "}
+                        <span className="text-indigo-600">{productCode}</span>
+                      </p>
+                      <p>
+                        <span className="font-semibold">Object Code:</span>{" "}
+                        <span className="text-indigo-600">{objectCode}</span>
+                      </p>
+                      <p>
+                        <span className="font-semibold">View Content Code:</span>{" "}
+                        <span className="text-indigo-600">{viewContentCode}</span>
+                      </p>
+                    </div>
+                  </pre>
+                )}
               </div>
-            </pre>
-          )}
-        </div>
 
-        <div className="mt-4">
-          <button
-            onClick={() => setIsAPIResponseAccordionOpen(!isAPIResponseAccordionOpen)}
-            className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
-          >
-            <span>Layout API Response</span>
-            <span>{isAPIResponseAccordionOpen ? "−" : "+"}</span>
-          </button>
+              <div className="mt-4">
+                <button
+                  onClick={() => setIsAPIResponseAccordionOpen(!isAPIResponseAccordionOpen)}
+                  className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
+                >
+                  <span>Layout API Response</span>
+                  <span>{isAPIResponseAccordionOpen ? "−" : "+"}</span>
+                </button>
 
-          {isAPIResponseAccordionOpen && (
-            <SyntaxHighlighter
-              language="json"
-              style={vscDarkPlus}
-              showLineNumbers
-              wrapLines
-              customStyle={{
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                fontSize: '0.875rem',
-                backgroundColor: '#1e1e1e'
-              }}
-            >
-              {JSON.stringify(responseLayout, null, 2)}
-            </SyntaxHighlighter>
-          )}
-        </div>
-        <div className="mt-4">
-          <button
-            onClick={() => setIsAPIResponseDataAccordionOpen(!isAPIResponseDataAccordionOpen)}
-            className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
-          >
-            <span>Data API Response</span>
-            <span>{isAPIResponseDataAccordionOpen ? "−" : "+"}</span>
-          </button>
+                {isAPIResponseAccordionOpen && (
+                  <SyntaxHighlighter
+                    language="json"
+                    style={vscDarkPlus}
+                    showLineNumbers
+                    wrapLines
+                    customStyle={{
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      fontSize: '0.875rem',
+                      backgroundColor: '#1e1e1e'
+                    }}
+                  >
+                    {JSON.stringify(responseLayout, null, 2)}
+                  </SyntaxHighlighter>
+                )}
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => setIsAPIResponseDataAccordionOpen(!isAPIResponseDataAccordionOpen)}
+                  className="w-full flex justify-between items-center text-left bg-indigo-100 px-4 py-2 rounded-lg font-semibold text-gray-800 hover:bg-indigo-200 transition"
+                >
+                  <span>Data API Response</span>
+                  <span>{isAPIResponseDataAccordionOpen ? "−" : "+"}</span>
+                </button>
 
-          {isAPIResponseDataAccordionOpen && (
-            <SyntaxHighlighter
-              language="json"
-              style={vscDarkPlus}
-              showLineNumbers
-              wrapLines
-              customStyle={{
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                fontSize: '0.875rem',
-                backgroundColor: '#1e1e1e'
-              }}
-            >
-              {JSON.stringify(responseData, null, 2)}
-            </SyntaxHighlighter>
-          )}
-        </div>
+                {isAPIResponseDataAccordionOpen && (
+                  <SyntaxHighlighter
+                    language="json"
+                    style={vscDarkPlus}
+                    showLineNumbers
+                    wrapLines
+                    customStyle={{
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      fontSize: '0.875rem',
+                      backgroundColor: '#1e1e1e'
+                    }}
+                  >
+                    {JSON.stringify(responseData, null, 2)}
+                  </SyntaxHighlighter>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        }
       </div>
-    </div >
+    </div>
   );
 }

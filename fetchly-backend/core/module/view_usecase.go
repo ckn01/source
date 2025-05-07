@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/fetchlydev/source/fetchly-backend/config"
@@ -42,7 +43,12 @@ func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, req
 		return resp, treeResp, err
 	}
 
-	// get parent path and root path
+	// Sort flat list by navigation_order
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].NavigationOrder < resp[j].NavigationOrder
+	})
+
+	// Get parent path and root path
 	for i, val := range resp {
 		pathParts := strings.Split(val.Path, ".")
 
@@ -50,11 +56,11 @@ func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, req
 		resp[i].ParentCode = strings.Join(pathParts[:len(pathParts)-1], ".")
 	}
 
-	// TODO: return two variables, first flat list, the second is tree hashmap
+	// Initialize tree map
 	treeMap := make(map[string]map[string]any)
 
 	for _, nav := range resp {
-		// Initialize node
+		// Create node
 		node := map[string]any{
 			"serial":           nav.Serial,
 			"view_content":     nav.ViewContent,
@@ -63,6 +69,7 @@ func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, req
 			"description":      nav.Description,
 			"url":              nav.URL,
 			"navigation_level": nav.NavigationLevel,
+			"navigation_order": nav.NavigationOrder,
 			"path":             nav.Path,
 			"parent_code":      nav.ParentCode,
 			"root_code":        nav.RootCode,
@@ -72,23 +79,43 @@ func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, req
 		treeMap[nav.Code] = node
 	}
 
-	// Build tree structure by linking parent-child nodes
+	// Build tree structure
 	var roots []map[string]any
 
 	for _, nav := range resp {
 		node := treeMap[nav.Code]
 		if parent, ok := treeMap[nav.ParentCode]; ok && nav.ParentCode != "" {
-			// Attach to parent
 			children := parent["children"].([]map[string]any)
 			parent["children"] = append(children, node)
 		} else {
-			// No parent means it's a root
 			roots = append(roots, node)
 		}
-
-		treeResp = roots
 	}
 
+	// Recursive sort of children by navigation_order
+	var sortChildrenByOrder func(map[string]any)
+	sortChildrenByOrder = func(node map[string]any) {
+		children, ok := node["children"].([]map[string]any)
+		if !ok || len(children) == 0 {
+			return
+		}
+
+		sort.Slice(children, func(i, j int) bool {
+			return children[i]["navigation_order"].(int32) < children[j]["navigation_order"].(int32)
+		})
+
+		node["children"] = children
+
+		for _, child := range children {
+			sortChildrenByOrder(child)
+		}
+	}
+
+	for _, root := range roots {
+		sortChildrenByOrder(root)
+	}
+
+	treeResp = roots
 	return resp, treeResp, nil
 }
 

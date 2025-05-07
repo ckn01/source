@@ -183,7 +183,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.children.map((child: { title: string; url: string }) => (
                             <li key={child.title}>
                               <Link
-                                href={`/${tenantCode}/${productCode}/${child.url}`}
+                                href={`/${tenantCode}/${productCode}${child.url}`}
                                 className="flex items-center gap-x-2 p-4 pl-8 hover:bg-amber-600 transition-colors text-base text-amber-100"
                               >
                                 <LucideIcon className="w-5 h-5" />
