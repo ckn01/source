@@ -642,7 +642,7 @@ func (r *repository) GetForeignKeyInfo(ctx context.Context, tableName, columnNam
 // local function
 
 // Helper function to build dynamic filters based on CatalogQuery
-func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery, tableName string) string {
+func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery) string {
 	var filterClauses []string
 
 	for _, filterGroup := range request.Filters {
@@ -693,7 +693,20 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 
 			// lets create logic to handle case sensitive field and value
 
-			groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fmt.Sprintf("%v.%v", completeTableName, fieldName), operator, formattedValue))
+			if strings.Contains(fieldName, "__") {
+				// handle fieldName that has double underscore this indicates that it is a relationship field
+				foreignFieldSet := strings.Split(fieldName, "__")
+
+				if len(foreignFieldSet) < 2 {
+					continue
+				}
+
+				foreignFieldName := fmt.Sprintf("%v.%v", fieldName, foreignFieldSet[1])
+				groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", foreignFieldName, operator, formattedValue))
+			} else {
+				groupClauses = append(groupClauses, fmt.Sprintf("%s %s %s", fmt.Sprintf("%v.%v", completeTableName, fieldName), operator, formattedValue))
+			}
+
 		}
 		// Combine the group clauses with the group operator (AND/OR)
 		if len(groupClauses) > 0 {
@@ -762,7 +775,7 @@ func (r *repository) getSingleData(ctx context.Context, columnList []map[string]
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
-		filterString := r.buildFilters(ctx, request, tableName)
+		filterString := r.buildFilters(ctx, request)
 
 		if len(filterString) > 0 {
 			query = query + " AND " + filterString
@@ -848,7 +861,7 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
-		filterString := r.buildFilters(ctx, request, tableName)
+		filterString := r.buildFilters(ctx, request)
 
 		if len(filterString) > 0 {
 			query = query + " AND " + filterString
@@ -906,7 +919,7 @@ func (r *repository) getTotalCountQuery(ctx context.Context, tableName string, r
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
-		filterString := r.buildFilters(ctx, request, tableName)
+		filterString := r.buildFilters(ctx, request)
 
 		if len(filterString) > 0 {
 			query = query + " AND " + filterString

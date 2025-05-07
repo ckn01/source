@@ -88,6 +88,16 @@ func (uc *catalogUsecase) GetTenantProductByCode(ctx context.Context, code, tena
 		resp = result.Items[0]
 	}
 
+	for columnName, item := range resp {
+		if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
+			// handle display value logic here
+			// room for improvement: replace hardcoded __name with display value from catalog
+			item.DisplayValue = resp[fmt.Sprintf("%v__name", columnName)].Value
+
+			resp[columnName] = item
+		}
+	}
+
 	return resp, nil
 }
 
@@ -378,13 +388,13 @@ func (uc *catalogUsecase) GetObjectDetail(ctx context.Context, request entity.Ca
 		return resp, err
 	}
 
-	for j, item := range resp {
+	for columnName, item := range resp {
 		if item.AdditionalData["foreign_table_name"] != nil && item.AdditionalData["foreign_field_name"] != nil {
 			// handle display value logic here
 			// room for improvement: replace hardcoded __name with display value from catalog
-			item.DisplayValue = resp[fmt.Sprintf("%v__name", j)].Value
+			item.DisplayValue = resp[fmt.Sprintf("%v__name", columnName)].Value
 
-			resp[j] = item
+			resp[columnName] = item
 		}
 	}
 
