@@ -91,54 +91,66 @@ func (uc *authUsecase) Login(ctx context.Context, request entity.LoginRequest) (
 
 	resp.Token = token
 
+	exlucdedFields := []string{"password_cipher", "password_salt", "password_iv", "created_at", "updated_at", "deleted_at", "created_by", "updated_by", "deleted_by"}
+
+	simplifiedUser := make(map[string]entity.DataItem)
+	for k, v := range user {
+		// Skip excluded fields
+		if !stringInSlice(k, exlucdedFields) {
+			simplifiedUser[k] = v
+		}
+	}
+
 	// generate refresh token
-	refreshToken, err := GenerateJWT(user, request.TenantCode)
+	refreshToken, err := GenerateJWT(simplifiedUser, request.TenantCode)
 	if err != nil {
 		return resp, err
 	}
 
 	resp.RefreshToken = refreshToken
-	resp.User = user
+	resp.User = simplifiedUser
 
 	return
 }
 
 func (uc *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (resp entity.RefreshTokenResponse, err error) {
-	// Validate the refresh token
-	claims, err := jwt.ParseWithClaims(refreshToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+	// Declare a MapClaims object to hold the claims
+	var claims jwt.MapClaims
+
+	// Validate the refresh token and parse claims
+	_, err = jwt.ParseWithClaims(refreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		// Check if the signing method is HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		tenantCode, ok := token.Claims.(jwt.MapClaims)["tenant_code"].(string)
+		// Access tenant code from claims
+		tenantCode, ok := claims["tenant_code"].(string)
 		if !ok {
 			return nil, fmt.Errorf("tenant code not found in token claims")
 		}
 
-		return GetJWTSecret(tenantCode), nil
+		// Return the secret for the tenant code
+		return []byte(GetJWTSecret(tenantCode)), nil
 	})
 	if err != nil {
 		return resp, err
 	}
 
-	// Check if the token is expired
-	if !claims.Valid {
-		return resp, fmt.Errorf("token is expired")
-	}
-
-	mapClaims, ok := claims.Claims.(jwt.MapClaims)
+	// Ensure claims contain the user data and check if the token is valid
+	user, ok := claims["user"].(map[string]entity.DataItem)
 	if !ok {
-		return resp, fmt.Errorf("invalid token claims")
+		return resp, fmt.Errorf("invalid user claims")
 	}
 
-	// Generate a new token
-	newToken, err := GenerateJWT(mapClaims["user"].(map[string]entity.DataItem), mapClaims["tenant_code"].(string))
+	// Generate a new token and refresh token
+	newToken, err := GenerateJWT(user, claims["tenant_code"].(string))
 	if err != nil {
 		return resp, err
 	}
 
-	// Generate a new refresh token
-	newRefreshToken, err := GenerateJWT(claims.Claims.(jwt.MapClaims)["user"].(map[string]entity.DataItem), claims.Claims.(jwt.MapClaims)["tenant_code"].(string))
+	// Generate a new refresh token (can reuse the same logic)
+	newRefreshToken, err := GenerateJWT(user, claims["tenant_code"].(string))
 	if err != nil {
 		return resp, err
 	}
@@ -166,13 +178,20 @@ func GetJWTSecret(tenantCode string) string {
 
 func GenerateJWT(user map[string]entity.DataItem, tenantCode string) (string, error) {
 	claims := jwt.MapClaims{
-		"user": user,
-		"exp":  time.Now().Add(entity.DefaultTokenExpiredHour * time.Hour).Unix(),
-		"iat":  time.Now().Unix(),
+		"user":        user,
+		"tenant_code": tenantCode,
+		"exp":         time.Now().Add(entity.DefaultTokenExpiredHour * time.Hour).Unix(),
+		"iat":         time.Now().Unix(),
 	}
 
+	// Ensure the JWT secret is a byte slice (not a string)
+	secret := []byte(GetJWTSecret(tenantCode))
+
+	// Create the token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(GetJWTSecret(tenantCode))
+
+	// Sign the token with the byte slice secret
+	return token.SignedString(secret)
 }
 
 func validateLoginRequest(request entity.LoginRequest) error {
@@ -264,4 +283,13 @@ func DecryptPassword(cipherTextB64, saltB64, ivB64, appSecret string) (string, e
 	}
 
 	return string(plainPwd), nil
+}
+
+func stringInSlice(str string, slice []string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }
