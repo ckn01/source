@@ -4,7 +4,7 @@ import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 
 // Props for the DashboardLayout component
@@ -65,6 +65,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [navigationMenuItems, setNavigationMenuItems] = useState(menuItems);
   const [navigationLayout, setNavigationLayout] = useState<any>(null);
   const [tenantData, setTenantData] = useState<any>(null);
+  const [tenantConfig, setTenantConfig] = useState<any>(null);
   const [appTitle, setAppTitle] = useState<string>(dashboardConfig.title);
 
   const toggleSidebar = () => {
@@ -97,6 +98,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       // fetching app title from tenant data
       let tenantConfig = tenantData?.tenant_config?.value
+      setTenantConfig(tenantConfig);
+
       if (tenantConfig?.header_title) {
         setAppTitle(tenantConfig?.header_title)
       }
@@ -141,6 +144,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const SidebarMenu = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+    const pathname = usePathname();
+
+    useEffect(() => {
+      if (!navigationLayout?.layout?.children) return;
+
+      const newExpanded: Record<string, boolean> = {};
+
+      navigationLayout.layout.children.forEach((child: ViewChild) => {
+        if (child.type === "navigation") {
+          child.props.fields.forEach((item) => {
+            const childrenMatch = item.children?.some((child: { url: string }) => {
+              const fullPath = `/${tenantCode}/${productCode}${child.url}`;
+              return pathname === fullPath;
+            });
+
+            if (childrenMatch) {
+              newExpanded[item.path] = true;
+            }
+          });
+        }
+      });
+
+      setExpanded(newExpanded);
+    }, [navigationLayout, pathname, tenantCode, productCode]);
 
     const toggleExpand = (label: string) => {
       setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -164,27 +191,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {item.children.length > 0 ? (
                     <div>
                       <button
-                        onClick={() => toggleExpand(item.label)}
+                        onClick={() => toggleExpand(item.path)}
                         className={`w-full flex items-center justify-between p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"
                           }`}
                       >
                         <span className="flex items-center gap-x-2">
                           <LucideIcon className="w-5 h-5" />
-                          {isSidebarOpen ? item.title : item.title.charAt(0)}
+                          <b>{isSidebarOpen ? item.title : item.title.charAt(0)}</b>
                         </span>
                         {isSidebarOpen && (
                           <span>
-                            {expanded[item.title] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {expanded[item.path] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                           </span>
                         )}
                       </button>
-                      {expanded[item.label] && (
+                      {expanded[item.path] && (
                         <ul className="pl-0">
                           {item.children.map((child: { title: string; url: string }) => (
                             <li key={child.title}>
                               <Link
                                 href={`/${tenantCode}/${productCode}${child.url}`}
-                                className="flex items-center gap-x-2 p-4 pl-8 hover:bg-amber-600 transition-colors text-base text-amber-100"
+                                className={`flex items-center gap-x-2 p-4 pl-8 transition-colors text-base 
+                                  ${pathname === `/${tenantCode}/${productCode}${child.url}`
+                                    ? "hover:bg-amber-600 bg-amber-700 font-semibold text-white"
+                                    : "hover:bg-amber-600 text-amber-100"}`}
                               >
                                 <LucideIcon className="w-5 h-5" />
                                 {isSidebarOpen ? child.title : child.title.charAt(0)}
@@ -208,46 +238,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             })
           }
         })}
-
-        {/* {navigationMenuItems.map((item) => (
-          <li key={item.label}>
-            {item.children ? (
-              <div>
-                <button
-                  onClick={() => toggleExpand(item.label)}
-                  className={`w-full flex items-center justify-between p-2 pl-3 hover:bg-amber-600 transition transition-colors ${isSidebarOpen ? "text-left" : "text-center"}`}
-                >
-                  <span>{isSidebarOpen ? item.label : item.label.charAt(0)}</span>
-                  {isSidebarOpen && (
-                    <span>{expanded[item.label] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
-                  )}
-                </button>
-                {expanded[item.label] && (
-                  <ul className="p-2">
-                    {item.children.map((child) => (
-                      <li key={child.label}>
-                        <Link
-                          href={child.href}
-                          className="block p-2 pl-3 text-sm hover:bg-amber-600 transition-colors"
-                        >
-                          {isSidebarOpen ? child.label : child.label.charAt(0)}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              <Link
-                href={item.href}
-                className={`block p-2 pl-3 hover:bg-amber-600 transition-colors ${isSidebarOpen ? "text-left" : "text-center"
-                  }`}
-              >
-                {isSidebarOpen ? item.label : item.label.charAt(0)}
-              </Link>
-            )}
-          </li>
-        ))} */}
       </ul>
     );
   };
@@ -316,18 +306,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* User Profile */}
-        <div className="mt-auto border-t border-amber-600 p-2 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
-            U
-          </div>
-          {isSidebarOpen && (
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">Username</span>
-              <span className="text-xs text-amber-200 font-bold">user@email.com</span>
-              <div className="text-xs text-amber-100">role permission</div>
+        {tenantConfig?.is_required_to_login &&
+          <div className="mt-auto border-t border-amber-600 p-2 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
+              U
             </div>
-          )}
-        </div>
+            {isSidebarOpen &&
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Username</span>
+                <span className="text-xs text-amber-200 font-bold">user@email.com</span>
+                <div className="text-xs text-amber-100">role permission</div>
+              </div>
+            }
+          </div>
+        }
       </aside >
 
 
