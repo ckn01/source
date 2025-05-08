@@ -62,18 +62,19 @@ func (uc *viewUsecase) GetNavigationByViewContentSerial(ctx context.Context, req
 	for _, nav := range resp {
 		// Create node
 		node := map[string]any{
-			"serial":           nav.Serial,
-			"view_content":     nav.ViewContent,
-			"code":             nav.Code,
-			"title":            nav.Title,
-			"description":      nav.Description,
-			"url":              nav.URL,
-			"navigation_level": nav.NavigationLevel,
-			"navigation_order": nav.NavigationOrder,
-			"path":             nav.Path,
-			"parent_code":      nav.ParentCode,
-			"root_code":        nav.RootCode,
-			"children":         []map[string]any{},
+			"serial":            nav.Serial,
+			"view_content":      nav.ViewContent,
+			"code":              nav.Code,
+			"title":             nav.Title,
+			"description":       nav.Description,
+			"url":               nav.URL,
+			"navigation_level":  nav.NavigationLevel,
+			"navigation_order":  nav.NavigationOrder,
+			"navigation_config": nav.NavigationConfig,
+			"path":              nav.Path,
+			"parent_code":       nav.ParentCode,
+			"root_code":         nav.RootCode,
+			"children":          []map[string]any{},
 		}
 
 		treeMap[nav.Code] = node

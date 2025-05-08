@@ -50,7 +50,8 @@ export default function LoginPage() {
       const db = await initDB();
       await db.put('auth', { key: 'session', ...data });
 
-      alert('Login successful and session stored in IndexedDB!');
+      // redirect to dashboard
+      window.location.href = `/${tenantCode}/${productCode}`;
     } catch (err) {
       console.error('Login error:', err);
       alert('Login failed!');

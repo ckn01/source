@@ -2,9 +2,12 @@ package viewrepository
 
 import (
 	"database/sql"
+	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/fetchlydev/source/fetchly-backend/core/entity"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -34,19 +37,26 @@ type Navigation struct {
 	NavigationLevel   int32          `gorm:"column:navigation_level" json:"navigation_level"`
 	Path              string         `gorm:"column:path" json:"path"`
 	NavigationOrder   int32          `gorm:"column:navigation_order" json:"navigation_order"`
+	NavigationConfig  datatypes.JSON `gorm:"column:navigation_config" json:"navigation_config"`
 }
 
 func (n *Navigation) ToEntity() entity.Navigation {
+	navigationConfigParse := make(map[string]any)
+	if err := json.Unmarshal(n.NavigationConfig, &navigationConfigParse); err != nil {
+		navigationConfigParse = make(map[string]any)
+	}
+
 	return entity.Navigation{
-		ViewContent:     entity.ViewContent{Serial: n.ViewContentSerial},
-		Code:            n.Code,
-		Serial:          n.Serial,
-		Title:           n.Title,
-		Description:     n.Description,
-		URL:             n.URL,
-		NavigationLevel: n.NavigationLevel,
-		Path:            n.Path,
-		NavigationOrder: n.NavigationOrder,
+		ViewContent:      entity.ViewContent{Serial: n.ViewContentSerial},
+		Code:             n.Code,
+		Serial:           n.Serial,
+		Title:            n.Title,
+		Description:      n.Description,
+		URL:              n.URL,
+		NavigationLevel:  n.NavigationLevel,
+		Path:             n.Path,
+		NavigationOrder:  n.NavigationOrder,
+		NavigationConfig: navigationConfigParse,
 	}
 }
 
@@ -60,4 +70,11 @@ func (n *Navigation) FromEntity(record entity.Navigation) {
 	n.NavigationLevel = record.NavigationLevel
 	n.Path = record.Path
 	n.NavigationOrder = record.NavigationOrder
+
+	jsonBytes, err := json.Marshal(record.NavigationConfig)
+	if err != nil {
+		log.Println("Error marshalling navigation config:", err)
+		jsonBytes = []byte("{}") // Fallback to empty JSON object
+	}
+	n.NavigationConfig = datatypes.JSON(jsonBytes)
 }

@@ -191,8 +191,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               return null;
             }
 
+            console.log("navigationItem: ", navigationItem);
+
             return navigationItem.map((item) => {
-              const LucideIcon = (Icons[item.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
+              const icon = (Icons[item.navigation_config?.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
+              const LucideIcon = icon;
 
               return (
                 <li key={item.code}>
@@ -204,7 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           }`}
                       >
                         <span className="flex items-center gap-x-2">
-                          <LucideIcon className="w-5 h-5" />
+                          <LucideIcon className="w-6 h-6" />
                           <b>{isSidebarOpen ? item.title : item.title.charAt(0)}</b>
                         </span>
                         {isSidebarOpen && (
@@ -222,19 +225,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             transition={{ type: "spring", stiffness: 300, damping: 24 }}
                             className="pl-0 overflow-hidden"
                           >
-                            {item.children.map((child: { title: string; url: string }) => (
-                              <li key={child.title}>
+                            {item.children.map((child: { title: string; url: string, navigation_config: any }) => {
+                              const icon = (Icons[child?.navigation_config?.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
+                              const LucideIcon = icon;
+
+                              return (<li key={child.title}>
                                 <Link
                                   href={`/${tenantCode}/${productCode}${child.url}`}
                                   className={`flex items-center gap-x-2 p-4 pl-8 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
                                     ? "hover:bg-amber-600 bg-amber-700 font-semibold text-white"
                                     : "hover:bg-amber-600 text-amber-100"}`}
                                 >
-                                  <LucideIcon className="w-5 h-5" />
+                                  <LucideIcon className="w-6 h-6" />
                                   {isSidebarOpen ? child.title : child.title.charAt(0)}
                                 </Link>
                               </li>
-                            ))}
+                              )
+                            })}
                           </motion.ul>
                         )}
                       </AnimatePresence>
@@ -244,7 +251,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       href={`/${tenantCode}/${productCode}/${item.url}`}
                       className={`flex items-center gap-x-2 p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"}`}
                     >
-                      <LucideIcon className="w-5 h-5" />
+                      <LucideIcon className="w-6 h-6" />
                       {isSidebarOpen ? item.title : item.title.charAt(0)}
                     </Link>
                   )}
