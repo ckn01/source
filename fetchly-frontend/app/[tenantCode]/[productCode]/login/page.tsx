@@ -1,6 +1,7 @@
 "use client";
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { openDB } from 'idb';
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,10 +11,51 @@ interface RouteParams {
   [key: string]: string | string[];
 }
 
+// Define IndexedDB setup
+const initDB = async () => {
+  return openDB('authDB', 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('auth')) {
+        db.createObjectStore('auth', { keyPath: 'key' });
+      }
+    },
+  });
+};
+
+
 export default function LoginPage() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode } = params;
   const [tenantData, setTenantData] = useState<any>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const username = (e.target as any).username.value;
+    const password = (e.target as any).password.value;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/t/${tenantCode}/p/${productCode}/auth/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Login failed');
+      const data = await response.json();
+
+      const db = await initDB();
+      await db.put('auth', { key: 'session', ...data });
+
+      alert('Login successful and session stored in IndexedDB!');
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('Login failed!');
+    }
+  };
 
   const fetchTenantProduct = async () => {
     try {
@@ -68,6 +110,7 @@ export default function LoginPage() {
       <div className="bg-white bg-opacity-90 p-12 rounded-2xl max-w-5xl w-full grid grid-cols-[1.25fr_0.05fr_1.25fr] items-center gap-4 shadow-[0_4px_0_0_rgba(0,0,0,0.4)]">
         {/* Left: Title and description */}
         <div className="px-6">
+          <img src={`/${tenantData?.tenant_product_config?.value?.icon}`} alt="Logo" className="w-32 mb-4" />
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             {tenantData?.tenant_serial__name?.display_value}
           </h1>
@@ -82,11 +125,12 @@ export default function LoginPage() {
         {/* Right: Login form */}
         <div className="px-8">
           <h2 className="text-2xl text-gray-800 mb-6 text-center">Login to Your Account</h2>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username/Email/Phone Number</label>
               <input
-                type="email"
+                type="text"
+                name="username"
                 className="w-full border border-gray-400 rounded-2xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="you@example.com"
               />
@@ -95,6 +139,7 @@ export default function LoginPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 type="password"
+                name="password"
                 className="w-full border border-gray-400 rounded-2xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="••••••••"
               />
@@ -105,9 +150,6 @@ export default function LoginPage() {
             >
               Login
             </button>
-            <div className="text-center mt-4">
-              <a href="#" className="text-sm text-cyan-600 hover:underline">Forgot Password?</a>
-            </div>
           </form>
         </div>
       </div>
