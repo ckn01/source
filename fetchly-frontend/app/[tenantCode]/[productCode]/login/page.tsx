@@ -69,7 +69,7 @@ export default function LoginPage() {
         {/* Left: Title and description */}
         <div className="px-6">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            {tenantData?.product_serial__name?.display_value}
+            {tenantData?.tenant_serial__name?.display_value}
           </h1>
           <p className="text-base text-gray-600">
             {tenantData?.tenant_product_config?.value?.description}
@@ -84,7 +84,7 @@ export default function LoginPage() {
           <h2 className="text-2xl text-gray-800 mb-6 text-center">Login to Your Account</h2>
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username/Email/Phone Number</label>
               <input
                 type="email"
                 className="w-full border border-gray-400 rounded-2xl px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"
