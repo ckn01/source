@@ -64,10 +64,10 @@ export default function LoginPage() {
         © {new Date().getFullYear()} <b>{tenantData?.tenant_serial__name?.display_value} - {tenantData?.product_serial__name?.display_value}</b>. All rights reserved.
       </div>
 
-      {/* Two-column card */}
-      <div className="bg-white bg-opacity-90 p-12 rounded-2xl shadow-lg max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      {/* Two-column card with divider */}
+      <div className="bg-white bg-opacity-90 p-12 rounded-2xl max-w-5xl w-full grid grid-cols-[1.25fr_0.05fr_1.25fr] items-center gap-4 shadow-[0_4px_0_0_rgba(0,0,0,0.4)]">
         {/* Left: Title and description */}
-        <div>
+        <div className="px-6">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             {tenantData?.product_serial__name?.display_value}
           </h1>
@@ -76,8 +76,11 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Vertical divider */}
+        <div className="hidden md:block h-[80%] w-px bg-gray-300 mx-auto"></div>
+
         {/* Right: Login form */}
-        <div>
+        <div className="px-8">
           <h2 className="text-2xl text-gray-800 mb-6 text-center">Login to Your Account</h2>
           <form className="space-y-4">
             <div>
@@ -109,6 +112,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-
   );
 }
