@@ -69,6 +69,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [tenantData, setTenantData] = useState<any>(null);
   const [tenantConfig, setTenantConfig] = useState<any>(null);
   const [appTitle, setAppTitle] = useState<string>(dashboardConfig.title);
+  const pathname = usePathname();
+  const noSidebarRoutes = ["login", "register", "forgot-password"];
+  console.log("pathname: ", pathname);
+
+  // check if pathname contains any of the noSidebarRoutes
+  const isNoSidebar = noSidebarRoutes.some((route) => pathname.includes(route));
 
   const toggleSidebar = () => {
     setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
@@ -254,82 +260,84 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside
-        style={{ width: sidebarWidth }}
-        className="relative flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300"
-      >
-        {/* Header */}
-        <div className="p-4 pl-3 flex items-center justify-between border-b border-amber-600">
-          {isSidebarOpen && (
-            <h2 className="text-3xl font-semibold tracking-wide">
-              {appTitle}
-            </h2>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors  shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-          >
-            {isSidebarOpen ? (
-              <ChevronLeft className="w-4 h-4 text-white" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-white" />
-            )}
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 overflow-y-auto">
-          <nav className="mt-2 bg-amber-800">
-            <SidebarMenu isSidebarOpen={isSidebarOpen} />
-          </nav>
-        </div>
-
-        <div
-          onMouseDown={(e) => {
-            const startX = e.clientX;
-            const startWidth = sidebarWidth;
-
-            const onMouseMove = (e: MouseEvent) => {
-              const newWidth = startWidth + (e.clientX - startX);
-              if (newWidth >= 56 && newWidth <= 400) {
-                setSidebarWidth(newWidth);
-              }
-            };
-
-            const onMouseUp = () => {
-              document.removeEventListener("mousemove", onMouseMove);
-              document.removeEventListener("mouseup", onMouseUp);
-            };
-
-            document.addEventListener("mousemove", onMouseMove);
-            document.addEventListener("mouseup", onMouseUp);
-          }}
-          className="absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10"
+      {!isNoSidebar &&
+        <aside
+          style={{ width: sidebarWidth }}
+          className="relative flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300"
         >
-          {/* Visual drag indicator */}
-          <div className="h-full w-full flex flex-col items-center justify-center gap-1 group-hover:gap-1.5 transition-all duration-150">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="w-1.5 h-1.5 bg-white/40 group-hover:bg-white/70 rounded-full"></div>
-            ))}
+          {/* Header */}
+          <div className="p-4 pl-3 flex items-center justify-between border-b border-amber-600">
+            {isSidebarOpen && (
+              <h2 className="text-3xl font-semibold tracking-wide">
+                {appTitle}
+              </h2>
+            )}
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors  shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+            >
+              {isSidebarOpen ? (
+                <ChevronLeft className="w-4 h-4 text-white" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-white" />
+              )}
+            </button>
           </div>
-        </div>
 
-        {/* User Profile */}
-        {tenantConfig?.is_required_to_login &&
-          <div className="mt-auto border-t border-amber-600 p-2 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
-              U
-            </div>
-            {isSidebarOpen &&
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Username</span>
-                <span className="text-xs text-amber-200 font-bold">user@email.com</span>
-                <div className="text-xs text-amber-100">role permission</div>
-              </div>
-            }
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto">
+            <nav className="mt-2 bg-amber-800">
+              <SidebarMenu isSidebarOpen={isSidebarOpen} />
+            </nav>
           </div>
-        }
-      </aside >
+
+          <div
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startWidth = sidebarWidth;
+
+              const onMouseMove = (e: MouseEvent) => {
+                const newWidth = startWidth + (e.clientX - startX);
+                if (newWidth >= 56 && newWidth <= 400) {
+                  setSidebarWidth(newWidth);
+                }
+              };
+
+              const onMouseUp = () => {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+              };
+
+              document.addEventListener("mousemove", onMouseMove);
+              document.addEventListener("mouseup", onMouseUp);
+            }}
+            className="absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10"
+          >
+            {/* Visual drag indicator */}
+            <div className="h-full w-full flex flex-col items-center justify-center gap-1 group-hover:gap-1.5 transition-all duration-150">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="w-1.5 h-1.5 bg-white/40 group-hover:bg-white/70 rounded-full"></div>
+              ))}
+            </div>
+          </div>
+
+          {/* User Profile */}
+          {tenantConfig?.is_required_to_login &&
+            <div className="mt-auto border-t border-cyan-600 p-2 pb-4 pt-4 flex items-center gap-3 bg-cyan-800">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
+                U
+              </div>
+              {isSidebarOpen &&
+                <div className="flex flex-col">
+                  <span className="text-md font-medium">Username</span>
+                  <span className="text-xs text-amber-200 font-bold">user@email.com</span>
+                  <div className="text-xs text-amber-100">role permission</div>
+                </div>
+              }
+            </div>
+          }
+        </aside >
+      }
 
 
       {/* Main Content */}

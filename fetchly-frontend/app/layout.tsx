@@ -8,6 +8,9 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  // get children properties
+  console.log("RootLayout children props: ", children);
+
   return (
     <html lang="en">
       <body>
