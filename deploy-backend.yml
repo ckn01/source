@@ -1,0 +1,26 @@
+name: Deploy Backend to Server
+
+on:
+  push:
+    paths:
+      - 'fetchly-backend/**' # only trigger when this folder changes
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to server via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          cd /path/to/backend
+          git pull origin main
+          docker-compose down && docker-compose up -d
