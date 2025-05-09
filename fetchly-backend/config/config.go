@@ -10,11 +10,11 @@ type Config struct {
 	HTTPPort    string `envconfig:"HTTP_PORT" default:"8080"`
 	Environment string `envconfig:"ENVIRONMENT" default:"staging"`
 
-	Host            string `envconfig:"CERKAS_PGSQL_HOST" default:""`
-	Port            string `envconfig:"CERKAS_PGSQL_PORT" default:""`
-	Username        string `envconfig:"CERKAS_PGSQL_USERNAME" default:""`
-	Password        string `envconfig:"CERKAS_PGSQL_PASSWORD" default:""`
-	DBName          string `envconfig:"CERKAS_PGSQL_DBNAME" default:""`
+	Host            string `envconfig:"FETCHLY_PGSQL_HOST" default:""`
+	Port            string `envconfig:"FETCHLY_PGSQL_PORT" default:""`
+	Username        string `envconfig:"FETCHLY_PGSQL_USERNAME" default:""`
+	Password        string `envconfig:"FETCHLY_PGSQL_PASSWORD" default:""`
+	DBName          string `envconfig:"FETCHLY_PGSQL_DBNAME" default:""`
 	LogMode         bool   `envconfig:"DB_LOG_MODE" default:"true"`
 	MaxIdleConns    int    `envconfig:"DB_MAX_IDLE_CONNS" default:"5"`
 	MaxOpenConns    int    `envconfig:"DB_MAX_OPEN_CONNS" default:"10"`
