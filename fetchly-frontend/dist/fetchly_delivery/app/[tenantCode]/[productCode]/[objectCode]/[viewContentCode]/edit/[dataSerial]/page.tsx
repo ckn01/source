@@ -35,7 +35,7 @@ type ViewChild = {
   class_name?: string;
   props?: {
     fields?: any[];
-    is_displaying_metadata_column?: Boolean;
+    is_displaying_metadata_column?: boolean;
   };
 };
 
