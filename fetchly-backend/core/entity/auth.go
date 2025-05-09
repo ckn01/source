@@ -2,6 +2,8 @@ package entity
 
 import (
 	"errors"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -20,6 +22,8 @@ var (
 	ErrInvalidPassword      = errors.New("invalid password")
 	ErrInvalidTenantSerial  = errors.New("invalid tenant serial")
 	ErrInvalidProductSerial = errors.New("invalid product serial")
+
+	JWT_SIGNING_METHOD = jwt.SigningMethodHS256
 )
 
 type EncryptPasswordRequest struct {
@@ -42,6 +46,7 @@ type LoginRequest struct {
 
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
+	TenantCode   string `json:"tenant_code"`
 }
 
 type LoginResponse struct {
@@ -55,4 +60,8 @@ type LoginResponse struct {
 type RefreshTokenResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
+}
+
+type JWTUserData interface {
+	~map[string]any | ~map[string]DataItem
 }

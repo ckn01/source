@@ -20,8 +20,9 @@ import (
 
 type AuthUsecase interface {
 	Login(ctx context.Context, request entity.LoginRequest) (resp entity.LoginResponse, err error)
-	RefreshToken(ctx context.Context, refreshToken string) (resp entity.RefreshTokenResponse, err error)
+	RefreshToken(ctx context.Context, tenantCode, refreshToken string) (resp entity.RefreshTokenResponse, err error)
 	EncryptPassword(ctx context.Context, tenantCode, plainPwd string) (cipherTextB64, saltB64, ivB64 string, err error)
+	GetCurrentUser(ctx context.Context, tenantCode, accessToken string) (resp map[string]any, err error)
 }
 
 type authUsecase struct {
@@ -113,44 +114,39 @@ func (uc *authUsecase) Login(ctx context.Context, request entity.LoginRequest) (
 	return
 }
 
-func (uc *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (resp entity.RefreshTokenResponse, err error) {
-	// Declare a MapClaims object to hold the claims
-	var claims jwt.MapClaims
-
-	// Validate the refresh token and parse claims
-	_, err = jwt.ParseWithClaims(refreshToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		// Check if the signing method is HMAC
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+func (uc *authUsecase) RefreshToken(ctx context.Context, tenantCode, refreshToken string) (resp entity.RefreshTokenResponse, err error) {
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("signing method invalid")
+		} else if method != entity.JWT_SIGNING_METHOD {
+			return nil, fmt.Errorf("signing method invalid")
 		}
 
-		// Access tenant code from claims
-		tenantCode, ok := claims["tenant_code"].(string)
-		if !ok {
-			return nil, fmt.Errorf("tenant code not found in token claims")
-		}
-
-		// Return the secret for the tenant code
 		return []byte(GetJWTSecret(tenantCode)), nil
 	})
 	if err != nil {
 		return resp, err
 	}
 
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return resp, fmt.Errorf("token invalid")
+	}
+
 	// Ensure claims contain the user data and check if the token is valid
-	user, ok := claims["user"].(map[string]entity.DataItem)
+	user, ok := claims["user"].(map[string]any)
 	if !ok {
 		return resp, fmt.Errorf("invalid user claims")
 	}
 
 	// Generate a new token and refresh token
-	newToken, err := GenerateJWT(user, claims["tenant_code"].(string))
+	newToken, err := GenerateJWT(user, tenantCode)
 	if err != nil {
 		return resp, err
 	}
 
 	// Generate a new refresh token (can reuse the same logic)
-	newRefreshToken, err := GenerateJWT(user, claims["tenant_code"].(string))
+	newRefreshToken, err := GenerateJWT(user, tenantCode)
 	if err != nil {
 		return resp, err
 	}
@@ -176,7 +172,7 @@ func GetJWTSecret(tenantCode string) string {
 	return fmt.Sprintf(entity.JWTSecret, tenantCode)
 }
 
-func GenerateJWT(user map[string]entity.DataItem, tenantCode string) (string, error) {
+func GenerateJWT[T entity.JWTUserData](user T, tenantCode string) (string, error) {
 	claims := jwt.MapClaims{
 		"user":        user,
 		"tenant_code": tenantCode,
@@ -292,4 +288,36 @@ func stringInSlice(str string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+func (uc *authUsecase) GetCurrentUser(ctx context.Context, tenantCode, accessToken string) (resp map[string]any, err error) {
+	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+		if method, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("signing method invalid")
+		} else if method != entity.JWT_SIGNING_METHOD {
+			return nil, fmt.Errorf("signing method invalid")
+		}
+
+		return []byte(GetJWTSecret(tenantCode)), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("token invalid")
+	}
+
+	user, ok := claims["user"]
+	if !ok {
+		return nil, fmt.Errorf("user field not found in claims")
+	}
+
+	userMap, ok := user.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("user field is not a map")
+	}
+
+	return userMap, nil
 }

@@ -5,6 +5,7 @@ import SidebarPanel from "@/components/SidebarPanel";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { CheckCircle, Filter, PlusCircle, RefreshCcw, TrashIcon, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -467,7 +468,13 @@ export default function DynamicPage() {
   };
 
   return (
-    <div className="flex flex-col items-left justify-left min-h-screen bg-gray-100">
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="flex flex-col items-left justify-left min-h-screen bg-gray-100"
+    >
       <div className="bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-cyan-600 mb-3">
           {viewContent?.object?.display_name ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})` : toLabel(objectCode)}
@@ -900,6 +907,6 @@ export default function DynamicPage() {
           </Card>
         }
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -61,11 +61,12 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 				o.PATCH("/data/:serial", httpHandler.UpdateObjectData)
 			}
 
-			util := p.Group("auth")
+			auth := p.Group("auth")
 			{
-				util.POST("/login", httpHandler.Login)
-				util.POST("/refresh-token", httpHandler.RefreshToken)
-				util.POST("/encrypt-password", httpHandler.EncryptPassword)
+				auth.POST("/login", httpHandler.Login)
+				auth.POST("/refresh-token", httpHandler.RefreshToken)
+				auth.POST("/encrypt-password", httpHandler.EncryptPassword)
+				auth.POST("/current-user", httpHandler.GetCurrentUser)
 			}
 		}
 	}

@@ -24,6 +24,7 @@ type HTTPHandler interface {
 	Login(c *gin.Context)
 	RefreshToken(c *gin.Context)
 	EncryptPassword(c *gin.Context)
+	GetCurrentUser(c *gin.Context)
 }
 
 type httpHandler struct {
@@ -356,16 +357,29 @@ func (h *httpHandler) RefreshToken(c *gin.Context) {
 	var statusMessage string = entity.DefaultSuccessMessage
 
 	request := entity.RefreshTokenRequest{}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		statusCode = http.StatusBadRequest
-		statusMessage = err.Error()
+	accessToken := c.Request.Header["Authorization"]
 
-		log.Println(statusMessage)
-		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+	if len(accessToken) < 1 {
+		statusCode = http.StatusBadRequest
+		statusMessage = "empty authorization token"
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
 		return
 	}
 
-	response, err := h.authUc.RefreshToken(c, request.RefreshToken)
+	tenantCode := c.Param(entity.TENANT_CODE)
+	if tenantCode == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	request.RefreshToken = accessToken[0]
+	request.TenantCode = tenantCode
+
+	response, err := h.authUc.RefreshToken(c, request.TenantCode, request.RefreshToken)
 	if err != nil {
 		statusCode = http.StatusInternalServerError
 		statusMessage = err.Error()
@@ -414,4 +428,38 @@ func (h *httpHandler) EncryptPassword(c *gin.Context) {
 	}
 
 	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) GetCurrentUser(c *gin.Context) {
+	var statusCode int = http.StatusOK
+	var statusMessage string = ""
+	accessToken := c.Request.Header["Authorization"]
+
+	if len(accessToken) < 1 {
+		statusCode = http.StatusBadRequest
+		statusMessage = "empty authorization token"
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	tenantCode := c.Param(entity.TENANT_CODE)
+	if tenantCode == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	resp, err := h.authUc.GetCurrentUser(c, tenantCode, accessToken[0])
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, resp)
 }
