@@ -22,9 +22,9 @@ export default function ProductPage() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center"
       >
-        <h1 className="text-3xl font-extrabold text-purple-700 mb-4">🌟 Dynamic Route Page</h1>
+        <h1 className="text-3xl font-extrabold text-purple-700 mb-4">🌟 Have a nice day, {`User`}!</h1>
         <p className="text-gray-600 mb-2">
-          You're currently viewing:
+          Welcome to {tenantCode} - {productCode}
         </p>
         <div className="bg-gray-50 rounded-xl p-4 shadow-inner">
           <p className="text-sm text-gray-500">Tenant Code</p>
