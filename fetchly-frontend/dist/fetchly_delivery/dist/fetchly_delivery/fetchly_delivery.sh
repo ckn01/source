@@ -10,7 +10,7 @@ mkdir -p ../dist/fetchly_delivery
 
 # copy content file from app_config.js.pekanbaru-smp to app_config.js
 echo "Copying app_config.js.fetchly_delivery to app_config.js..."
-cp ../deployment_config/appConfig.ts.fetchly_delivery ../app/appConfig.ts
+cp src/deployment_config/app_config.js.fetchly_delivery src/app_config.js
 
 # copy all files from . to ../dist/fetchly_delivery except for dist and node_modules and .git and .github and .sh files
 echo "Copying all files to ../dist/fetchly_delivery..."
