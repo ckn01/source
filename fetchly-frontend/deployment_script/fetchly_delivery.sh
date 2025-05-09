@@ -30,5 +30,5 @@ if [ "$1" == "staging" ]; then
   npm run dev
 else
   NODE_OPTIONS="--max-old-space-size=512" npm run build
-  npm run start
+  npm run start -p 6061
 fi
