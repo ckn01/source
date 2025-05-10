@@ -37,7 +37,7 @@ export default function LoginPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/t/${tenantCode}/p/${productCode}/auth/login`,
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/auth/login`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
