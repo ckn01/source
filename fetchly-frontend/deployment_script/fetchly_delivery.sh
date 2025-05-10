@@ -29,6 +29,9 @@ echo "Running the app..."
 if [ "$1" == "staging" ]; then
   npm run dev
 else
-  NODE_OPTIONS="--max-old-space-size=512" npm run build
+  if [ "$1" == "rebuild" ]; then
+    NODE_OPTIONS="--max-old-space-size=512" npm run build
+  fi
+  
   npm run start -- -p 6061
 fi
