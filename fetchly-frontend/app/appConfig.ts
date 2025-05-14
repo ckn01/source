@@ -13,5 +13,6 @@ export const dashboardConfig = {
 export const APIMethod = {
   POST: "POST",
   PUT: "PUT",
-  PATCH: "PATCH"
+  PATCH: "PATCH",
+  DELETE: "DELETE"
 }

@@ -49,6 +49,7 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
   const [localResponseData, setLocalResponseData] = useState<Record<string, any>>(responseData);
   const [localViewComponent] = useState<any>(viewComponent)
   const [showAlert, setShowAlert] = useState(false);
+  const [showDialog, setShowDialog] = useState(true);
   const [alertMessage, setAlertMessage] = useState<Record<string, any>>({
     "title": null,
     "content": "Alert content",
@@ -234,11 +235,18 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
   }
 
   useEffect(() => {
-    console.log("alertMessage", alertMessage)
     if (alertMessage.title !== null && alertMessage.title !== "") {
       setShowAlert(true)
     }
   }, [alertMessage])
+
+  const handleDelete = () => {
+
+  }
+
+  const handleArchive = () => {
+
+  }
 
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">

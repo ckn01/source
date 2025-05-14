@@ -21,6 +21,7 @@ type HTTPHandler interface {
 	GetContentLayoutByKeys(c *gin.Context)
 	CreateObjectData(c *gin.Context)
 	UpdateObjectData(c *gin.Context)
+	DeleteObjectData(c *gin.Context)
 	Login(c *gin.Context)
 	RefreshToken(c *gin.Context)
 	EncryptPassword(c *gin.Context)
@@ -315,6 +316,49 @@ func (h *httpHandler) UpdateObjectData(c *gin.Context) {
 	}
 
 	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
+}
+
+func (h *httpHandler) DeleteObjectData(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+	var defaultUserSerial string = "system"
+
+	request := entity.DataMutationRequest{}
+
+	if c.Param("serial") != "" {
+		request.Serial = c.Param("serial")
+	}
+
+	if c.Param("tenant_code") != "" {
+		request.TenantCode = c.Param("tenant_code")
+	}
+
+	if c.Param("product_code") != "" {
+		request.ProductCode = c.Param("product_code")
+	}
+
+	if c.Param("object_code") != "" {
+		request.ObjectCode = c.Param("object_code")
+	}
+
+	request.UserSerial = defaultUserSerial
+
+	err := h.catalogUc.DeleteObjectData(c, request)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		if errors.Is(err, entity.ErrorNoUpdateDataFound) {
+			statusCode = http.StatusNotFound
+			statusMessage = entity.ErrorNoUpdateDataFound.Error()
+		}
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
 }
 
 func (h *httpHandler) Login(c *gin.Context) {

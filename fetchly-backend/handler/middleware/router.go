@@ -59,6 +59,7 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 
 				o.PUT("/data", httpHandler.CreateObjectData)
 				o.PATCH("/data/:serial", httpHandler.UpdateObjectData)
+				o.DELETE("/data/:serial", httpHandler.DeleteObjectData)
 			}
 
 			auth := p.Group("auth")

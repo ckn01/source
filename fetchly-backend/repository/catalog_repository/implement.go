@@ -536,6 +536,21 @@ func (r *repository) UpdateObjectData(ctx context.Context, request entity.DataMu
 }
 
 func (r *repository) DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error) {
+	// compose where clause
+	identifierColumn := entity.DEFAULT_IDENTIFIER
+	if !helper.IsUUID(request.Serial) {
+		identifierColumn = entity.DEFAULT_IDENTIFIER
+	}
+
+	// compose delete query
+	completeTableName := request.TenantCode + "." + request.ObjectCode
+	updateQuery := fmt.Sprintf("UPDATE %v SET deleted_at = NOW() WHERE %v.%v = '%v'", completeTableName, completeTableName, identifierColumn, request.Serial)
+
+	// execute update query
+	if err := r.db.Exec(updateQuery).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 

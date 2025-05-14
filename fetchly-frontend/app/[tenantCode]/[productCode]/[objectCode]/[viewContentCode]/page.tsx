@@ -48,6 +48,7 @@ interface DynamicTableProps {
   actionButtonOpen: boolean[];
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
   routeParams: RouteParams;
+  refreshData?: () => void;
 }
 
 const DynamicTable = ({
@@ -60,7 +61,8 @@ const DynamicTable = ({
   innerWidth,
   actionButtonOpen,
   setActionButtonOpen,
-  routeParams
+  routeParams,
+  refreshData
 }: DynamicTableProps) => {
   return (
     <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
@@ -141,6 +143,7 @@ const DynamicTable = ({
                         productCode={routeParams.productCode}
                         objectCode={routeParams.objectCode}
                         viewContentCode={routeParams.viewContentCode}
+                        onDeleteSuccess={refreshData}
                       />
                     </td>
 
@@ -222,6 +225,8 @@ export default function DynamicPage() {
   const [totalPages, setTotalPages] = useState<number>(1)
   const [actionButtonOpen, setActionButtonOpen] = useState<boolean[]>([]);
   const [selectedFieldPerGroup, setSelectedFieldPerGroup] = useState<Record<string, string>>({});
+
+  const [showDialog, setShowDialog] = useState(true);
 
   const handlePageClick = (pageIndex: { selected: number }) => {
     const selectedPage = pageIndex.selected + 1;
@@ -466,6 +471,10 @@ export default function DynamicPage() {
       is_displaying_metadata_column?: boolean;
     };
   };
+
+  const handleDelete = () => {
+
+  }
 
   return (
     <motion.div
@@ -786,6 +795,7 @@ export default function DynamicPage() {
                         objectCode,
                         viewContentCode
                       }}
+                      refreshData={() => fetchData(responseLayout, currentPage)}
                     />
 
                     <div className="flex justify-end mt-4 mr-4 pb-4">
