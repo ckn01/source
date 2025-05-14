@@ -189,8 +189,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               return null;
             }
 
-            console.log("navigationItem: ", navigationItem);
-
             return navigationItem.map((item) => {
               const icon = (Icons[item.navigation_config?.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
               const LucideIcon = icon;

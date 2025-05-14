@@ -2,6 +2,7 @@
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import { AnimatePresence, motion } from "framer-motion";
+import { openDB } from 'idb';
 import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
 import Link from "next/link";
@@ -55,6 +56,24 @@ const menuItems = [
   }
 ];
 
+// Define IndexedDB setup
+const initDB = async () => {
+  return openDB('authDB', 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('auth')) {
+        db.createObjectStore('auth', { keyPath: 'key' });
+      }
+    },
+  });
+};
+
+export const getAuthValue = async (key: string, field: string) => {
+  const db = await initDB();
+  const result = await db.get('auth', key);
+
+  return result?.[field] ?? null;
+};
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const params = useParams<RouteParams>();
   const {
@@ -70,6 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [appTitle, setAppTitle] = useState<string>(dashboardConfig.title);
   const pathname = usePathname();
   const noSidebarRoutes = ["login", "register", "forgot-password"];
+  const [currentUser, setCurrentUser] = useState<Record<string, any>>({});
 
   // check if pathname contains any of the noSidebarRoutes
   const isNoSidebar = noSidebarRoutes.some((route) => pathname.includes(route));
@@ -141,12 +161,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
+  const fetchCurrentUser = async () => {
+    const currentUser = await getAuthValue('session', 'user');
+    setCurrentUser(currentUser)
+  }
+
   useEffect(() => {
     if (tenantCode && productCode && objectCode && viewContentCode) {
       fetchTenant();
       fetchNavigation();
+
+      fetchCurrentUser()
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
+
+  useEffect(() => {
+    console.log("currentUser", currentUser)
+  }, [currentUser])
 
   const SidebarMenu = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -188,8 +219,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             if (!navigationItem) {
               return null;
             }
-
-            console.log("navigationItem: ", navigationItem);
 
             return navigationItem.map((item) => {
               const icon = (Icons[item.navigation_config?.icon as keyof typeof Icons] ?? Icons.Circle) as React.FC<LucideProps>;
@@ -329,14 +358,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* User Profile */}
           {tenantConfig?.is_required_to_login &&
             <div className="mt-auto border-t border-cyan-600 p-2 pb-4 pt-4 flex items-center gap-3 bg-cyan-800">
-              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
-                U
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                {currentUser?.name?.display_value?.charAt(0)}
               </div>
               {isSidebarOpen &&
                 <div className="flex flex-col">
-                  <span className="text-md font-medium">Username</span>
-                  <span className="text-xs text-amber-200 font-bold">user@email.com</span>
-                  <div className="text-xs text-amber-100">role permission</div>
+                  <span className="text-md font-medium mb-1">{currentUser?.name?.display_value}</span>
+                  <span className="text-xs text-amber-200 font-bold mb-1">{currentUser?.email?.display_value}</span>
+                  <div className="text-xs text-amber-100 mb-1">{currentUser?.username?.display_value}</div>
                 </div>
               }
             </div>

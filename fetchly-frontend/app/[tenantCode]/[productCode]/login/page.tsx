@@ -23,7 +23,6 @@ const initDB = async () => {
   });
 };
 
-
 export default function LoginPage() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode } = params;
@@ -49,7 +48,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       const db = await initDB();
-      await db.put('auth', { key: 'session', ...data });
+      await db.put('auth', { key: 'session', ...data.data });
 
       // redirect to dashboard
       window.location.href = `/${tenantCode}/${productCode}`;
@@ -94,6 +93,7 @@ export default function LoginPage() {
   }, [tenantCode, productCode]);
 
   return (
+
     <div
       className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 bg-blend-overlay bg-cover bg-center relative"
       style={{
@@ -112,7 +112,15 @@ export default function LoginPage() {
       <div className="bg-white bg-opacity-90 p-12 rounded-2xl max-w-5xl w-full grid grid-cols-[1.25fr_0.05fr_1.25fr] items-center gap-4 shadow-[0_4px_0_0_rgba(0,0,0,0.4)]">
         {/* Left: Title and description */}
         <div className="px-6">
-          <Image src={`/${tenantData?.tenant_product_config?.value?.icon}`} alt="Logo" className="w-32 mb-4" />
+          {tenantData?.tenant_product_config?.value?.icon &&
+            <Image
+              src={`/${tenantData?.tenant_product_config?.value?.icon}`}
+              alt="Logo"
+              width={128} // adjust as needed
+              height={128}
+              className="w-32 mb-4"
+            />
+          }
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             {tenantData?.tenant_serial__name?.display_value}
           </h1>
