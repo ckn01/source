@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import AsyncSelect from "react-select/async";
 import SidebarPanel from "../SidebarPanel";
+import FancyAlert from "./Alert";
 
 interface DynamicFormProps {
   index: number;
@@ -47,6 +48,14 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
   const [inputValue, setInputValue] = useState<Record<string, string | undefined>>({});
   const [localResponseData, setLocalResponseData] = useState<Record<string, any>>(responseData);
   const [localViewComponent] = useState<any>(viewComponent)
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<Record<string, any>>({
+    "title": null,
+    "content": "Alert content",
+    "position": "top-right",
+    "type": "success",
+    "autoDismiss": true
+  });
 
   const fetchData = async (page: number, referenceObjectCode: string, filters: any) => {
     try {
@@ -79,6 +88,8 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
         ...prevData,
         [referenceObjectCode]: data.data,
       }));
+
+      setIsLoading(false)
     } catch (error) {
       console.error("Data API error:", error);
     }
@@ -107,6 +118,20 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
     if (responseData) {
       setLocalResponseData(responseData);
       setIsLoading(false);
+    } else {
+      // set default value for each field
+      const defaultData: Record<string, any> = {};
+      localViewComponent?.props?.fields?.forEach((field: any) => {
+        const fieldCode = field.field_code;
+        defaultData[fieldCode] = {
+          value: "",
+          display_value: "",
+        };
+      });
+
+      setLocalResponseData(defaultData);
+      setInputValue(defaultData);
+      setIsLoading(false);
     }
   }, [responseData]);
 
@@ -134,8 +159,100 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
     }
   }, [inputValue]);
 
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+
+      let url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data`;
+      let method = APIMethod.PUT
+
+      const serialValue = localResponseData?.serial?.value;
+      if (serialValue != null && serialValue !== '') {
+        url = `${url}/${serialValue}`;
+        method = APIMethod.PATCH
+      }
+
+      const fieldArray = Object.entries(localResponseData)
+        .filter(([key, field]) => !key.includes('__') && field.value !== '') // skip if key contains "__" or value is empty
+        .map(([field_code, field]) => ({
+          field_code,
+          ...field
+        }));
+
+
+      const dataResponse = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serial: serialValue,
+          items: fieldArray,
+          object_code: objectCode,
+          tenant_code: tenantCode,
+          product_code: productCode,
+          view_content_code: viewContentCode,
+        }),
+      });
+
+      if (!dataResponse.ok) {
+        throw new Error("Failed to submit data");
+      }
+
+      const data = await dataResponse.json();
+
+      // Check for 200 and redirect
+      if (dataResponse.status === 200) {
+        setAlertMessage((prev) => {
+          const updated = { ...prev[0] };
+          updated.title = "Success to submit data";
+          updated.content = "You will be redirected in 3 seconds...";
+          updated.type = "success";
+
+          return updated;
+        })
+
+        setTimeout(() => {
+          const redirectUrl = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}`;
+          window.location.href = redirectUrl;
+        }, 3000);
+
+      } else {
+        setAlertMessage((prev) => {
+          const updated = { ...prev[0] };
+          updated.title = "Failed to submit data";
+          updated.content = dataResponse.status;
+          updated.type = "danger";
+
+          return updated;
+        })
+      }
+
+    } catch (error) {
+      console.error("Data API error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    console.log("alertMessage", alertMessage)
+    if (alertMessage.title !== null && alertMessage.title !== "") {
+      setShowAlert(true)
+    }
+  }, [alertMessage])
+
   return (
     <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
+      {showAlert && (
+        <FancyAlert
+          title={alertMessage.title}
+          message={alertMessage.content}
+          position={alertMessage.position}
+          autoDismiss={alertMessage.autoDismiss}
+          type={alertMessage.type}
+          onClose={() => setShowAlert(false)}
+        />
+      )}
+
       <CardContent className="p-0 pb-0 overflow-x-auto">
         {isLoading && (
           <div className="absolute top-0 left-0 w-full h-full bg-white/60 flex items-center justify-center z-10">
@@ -156,7 +273,7 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
           <button
             className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
             onClick={() => {
-              console.log("save")
+              handleSubmit()
             }}
           >
             <Save size={18} />
@@ -277,7 +394,28 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
                               }))
                             }}
                           />
-                          <div className="w-16 h-9 bg-gray-400 rounded-full peer peer-checked:bg-cyan-500 after:content-[''] after:absolute after:top-0.5 after:left-[-2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-8 after:w-8 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white relative" />
+                          <div className="
+                            w-16 
+                            h-9 
+                            bg-gray-400 
+                            rounded-full 
+                            peer 
+                            peer-checked:bg-cyan-500 
+                            after:content-[''] 
+                            after:absolute 
+                            after:top-0.5 
+                            after:left-[-2px] 
+                            after:bg-white 
+                            after:border-gray-300 
+                            after:border 
+                            after:rounded-full 
+                            after:h-8 
+                            after:w-8 
+                            after:transition-all 
+                            peer-checked:after:translate-x-full 
+                            peer-checked:after:border-white 
+                            relative
+                          " />
                         </label>
                       ) : (
                         <input
@@ -318,7 +456,7 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
           <button
             className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
             onClick={() => {
-              console.log("save")
+              handleSubmit()
             }}
           >
             <Save size={18} />

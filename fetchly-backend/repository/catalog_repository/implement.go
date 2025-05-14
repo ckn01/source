@@ -105,7 +105,7 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 	// filter columns if request.Fields is not empty
 	if len(request.Fields) > 0 {
 		var filteredColumns []map[string]any
-		for fieldNameKey := range request.Fields {
+		for fieldNameKey, fieldValue := range request.Fields {
 			isFound := false
 
 			if !strings.Contains(fieldNameKey, "__") {
@@ -121,6 +121,18 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 				// handle fieldName that has double underscore this indicates that it is a relationship field
 				r.handleJoinColumn(ctx, request, fieldNameKey, &joinQueryMapAll, &joinQueryOrderAll, &filteredColumns)
 				isFound = true
+			}
+
+			if fieldValue.FieldCode != "" || fieldValue.FieldName != "" {
+				for _, column := range filteredColumns {
+					if fieldNameKey == column[entity.FieldColumnCode] && fieldValue.FieldCode != "" {
+						column[entity.FieldColumnCode] = fieldValue.FieldCode
+					}
+
+					if fieldNameKey == column[entity.FieldColumnCode] && fieldValue.FieldName != "" {
+						column[entity.FieldColumnName] = fieldValue.FieldName
+					}
+				}
 			}
 
 			// after finish iterating columns, if field is not found in columns, return error

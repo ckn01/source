@@ -204,9 +204,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         className={`w-full flex items-center justify-between p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"
                           }`}
                       >
-                        <span className="flex items-center gap-x-2">
+                        <span className="flex items-center gap-x-1">
                           <LucideIcon className="w-6 h-6" />
-                          <b>{isSidebarOpen ? item.title : item.title.charAt(0)}</b>
+                          {isSidebarOpen ? item.title : (expanded[item.path] ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
                         </span>
                         {isSidebarOpen && (
                           <span>
@@ -230,12 +230,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                               return (<li key={child.title}>
                                 <Link
                                   href={`/${tenantCode}/${productCode}${child.url}`}
-                                  className={`flex items-center gap-x-2 p-4 pl-8 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
+                                  className={`flex items-center gap-x-1 p-4 pl-4 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
                                     ? "hover:bg-amber-600 bg-amber-700 font-semibold text-white"
                                     : "hover:bg-amber-600 text-amber-100"}`}
                                 >
                                   <LucideIcon className="w-6 h-6" />
-                                  {isSidebarOpen ? child.title : child.title.charAt(0)}
+                                  {isSidebarOpen && child.title}
                                 </Link>
                               </li>
                               )
@@ -250,7 +250,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       className={`flex items-center gap-x-2 p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"}`}
                     >
                       <LucideIcon className="w-6 h-6" />
-                      {isSidebarOpen ? item.title : item.title.charAt(0)}
+                      {isSidebarOpen && item.title}
                     </Link>
                   )}
                 </li>

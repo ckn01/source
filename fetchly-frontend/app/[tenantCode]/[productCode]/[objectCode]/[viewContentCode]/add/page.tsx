@@ -1,10 +1,10 @@
 "use client";
 
 import { APIMethod, dashboardConfig } from "@/app/appConfig";
-import SidebarPanel from "@/components/SidebarPanel";
 import { Card, CardContent } from "@/components/ui/card";
+import DynamicForm from "@/components/ui/DynamicForm";
 import { toLabel } from "@/lib/utils";
-import { ArrowLeftCircle, Save, X } from "lucide-react";
+import { ArrowLeftCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
@@ -41,7 +41,7 @@ type ViewChild = {
 export default function DynamicPageAdd() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode, viewContentCode } = params;
-  const [_isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [innerWidth, setInnerWidth] = useState<number | null>(null);
 
@@ -150,66 +150,13 @@ export default function DynamicPageAdd() {
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "form") {
               return (
-                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-2">
-                  <CardContent className="p-0 pb-0 overflow-x-auto">
-                    <div className="flex justify-end gap-0 mb-2">
-                      <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-4 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        onClick={() => {
-                          window.history.back()
-                        }}
-                      >
-                        <X size={18} />
-                        Cancel
-                      </button>
-                      <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        onClick={() => {
-                          console.log("save")
-                        }}
-                      >
-                        <Save size={18} />
-                        Save
-                      </button>
-                    </div>
-
-                    {/* The SidebarPanel */}
-                    <SidebarPanel isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
-                      <div className="space-x-2 flex items-center justify-end">
-
-                      </div>
-                    </SidebarPanel>
-
-                    {/* main content section starts */}
-                    <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 m-2">
-                      <CardContent className="p-4 overflow-x-auto">
-                        form here
-                      </CardContent>
-                    </Card>
-                    {/* main content section ends */}
-
-                    <div className="flex justify-end gap-0 mt-2">
-                      <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-4 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        onClick={() => {
-                          window.history.back()
-                        }}
-                      >
-                        <X size={18} />
-                        Cancel
-                      </button>
-                      <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
-                        onClick={() => {
-                          console.log("save")
-                        }}
-                      >
-                        <Save size={18} />
-                        Save
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <DynamicForm
+                  key={index}
+                  index={index}
+                  viewComponent={child}
+                  viewLayout={viewLayout}
+                  responseData={responseData}
+                />
               );
             }
             return null;
