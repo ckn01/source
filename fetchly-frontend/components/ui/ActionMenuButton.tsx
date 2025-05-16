@@ -53,8 +53,8 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
     try {
       setIsLoading(true);
 
-      let url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data/${serialForDelete}`;
-      let method = APIMethod.DELETE
+      const url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data/${serialForDelete}`;
+      const method = APIMethod.DELETE
 
       const dataResponse = await fetch(url, {
         method: method
