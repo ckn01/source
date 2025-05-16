@@ -1,6 +1,6 @@
 "use client";
 
-import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { dashboardConfig } from "@/app/appConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import DynamicForm from "@/components/ui/DynamicForm";
 import { toLabel } from "@/lib/utils";
@@ -76,7 +76,7 @@ export default function DynamicPageEdit() {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/form`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -132,7 +132,7 @@ export default function DynamicPageEdit() {
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data/detail/${dataSerial}`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },

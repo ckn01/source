@@ -1,6 +1,6 @@
 "use client";
 
-import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { dashboardConfig } from "@/app/appConfig";
 import { openDB } from 'idb';
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -63,7 +63,7 @@ export default function LoginPage() {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },

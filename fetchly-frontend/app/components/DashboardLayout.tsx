@@ -1,6 +1,6 @@
 "use client"; // Client component for interactivity
 
-import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { dashboardConfig } from "@/app/appConfig";
 import { AnimatePresence, motion } from "framer-motion";
 import { openDB } from 'idb';
 import * as Icons from "lucide-react";
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -139,7 +139,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/navigation`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },

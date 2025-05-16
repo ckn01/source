@@ -1,4 +1,4 @@
-import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { dashboardConfig } from "@/app/appConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
 import { Save, X } from "lucide-react";
@@ -65,7 +65,7 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${referenceObjectCode}/view/${viewContentCode}/data`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             filters: filters,
@@ -165,12 +165,12 @@ export default function DynamicForm({ index, viewComponent, responseData }: Dyna
       setIsLoading(true);
 
       let url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data`;
-      let method = APIMethod.PUT
+      let method = "PUT"
 
       const serialValue = localResponseData?.serial?.value;
       if (serialValue != null && serialValue !== '') {
         url = `${url}/${serialValue}`;
-        method = APIMethod.PATCH
+        method = "PATCH"
       }
 
       const fieldArray = Object.entries(localResponseData)

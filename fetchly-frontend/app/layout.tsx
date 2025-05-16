@@ -3,7 +3,7 @@
 import { openDB } from 'idb';
 import { useParams, usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import { APIMethod, dashboardConfig } from "./appConfig";
+import { dashboardConfig } from "./appConfig";
 import DashboardLayout from "./components/DashboardLayout";
 import "./globals.css";
 
@@ -51,7 +51,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -79,7 +79,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/auth/current-user`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": AuthToken

@@ -1,6 +1,6 @@
 "use client";
 
-import { APIMethod, dashboardConfig } from "@/app/appConfig";
+import { dashboardConfig } from "@/app/appConfig";
 import SidebarPanel from "@/components/SidebarPanel";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -334,7 +334,7 @@ export default function DynamicPage() {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -360,7 +360,7 @@ export default function DynamicPage() {
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/record`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
         }
@@ -414,7 +414,7 @@ export default function DynamicPage() {
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
         {
-          method: APIMethod.POST,
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fields: layoutData.layout?.children?.[0]?.props?.fields?.reduce((acc: any, field: any) => {
