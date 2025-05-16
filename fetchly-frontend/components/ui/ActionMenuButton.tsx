@@ -54,10 +54,9 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
       setIsLoading(true);
 
       const url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data/${serialForDelete}`;
-      const method = APIMethod.DELETE
 
       const dataResponse = await fetch(url, {
-        method: method
+        method: APIMethod.DELETE
       });
 
       if (!dataResponse.ok) {
