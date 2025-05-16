@@ -1,4 +1,4 @@
-import { dashboardConfig } from "@/app/appConfig";
+import { APIMethod, dashboardConfig } from "@/app/appConfig";
 import { BookOpenText, MoreVertical, PencilIcon, TrashIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import FancyAlert from "./Alert";
@@ -56,7 +56,7 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
       const url = `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/data/${serialForDelete}`;
 
       const dataResponse = await fetch(url, {
-        method: "DELETE"
+        method: APIMethod.DELETE
       });
 
       if (!dataResponse.ok) {
