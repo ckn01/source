@@ -1,37 +1,47 @@
 #!/bin/bash
 
-# create directory for build result if not exist yet
-echo "Creating build directory..."
-mkdir -p ../dist
+set -e  # stop script if any command fails
+set -o pipefail
 
-# create directory for fetchly_delivery inside build directory if not exist yet
-echo "Creating ../dist/fetchly_delivery directory..."
+echo "=== Preparing build directories..."
+
 mkdir -p ../dist/fetchly_delivery
 
-# copy content file from app_config.js.pekanbaru-smp to app_config.js
-echo "Copying app_config.js.fetchly_delivery to app_config.js..."
+echo "✔️ Build directories ready."
+
+echo "=== Applying environment config..."
 cp ../deployment_config/appConfig.ts.fetchly_delivery ../app/appConfig.ts
 
-# copy all files from . to ../dist/fetchly_delivery except for dist and node_modules and .git and .github and .sh files
-echo "Copying all files to ../dist/fetchly_delivery..."
-rsync -av --progress ../* ../dist/fetchly_delivery --exclude node_modules --exclude .next --exclude .git
+echo "✔️ Config copied."
 
-# change directory to ../dist/fetchly_delivery
-echo "Changing directory to ../dist/fetchly_delivery..."
+echo "=== Copying project files (excluding heavy folders)..."
+rsync -av --progress ../ ../dist/fetchly_delivery \
+  --exclude node_modules \
+  --exclude .next \
+  --exclude .git \
+  --exclude .github \
+  --exclude "*.sh" \
+  --exclude dist
+
+echo "✔️ Project files copied."
+
 cd ../dist/fetchly_delivery
 
-# install dependencies
-echo "Installing dependencies..."
-npm install --legacy-peer-deps --force
+echo "=== Installing dependencies with memory-safe options..."
+NODE_OPTIONS="--max-old-space-size=512" nice -n 10 npm install --legacy-peer-deps --no-audit --prefer-offline
 
-# run the app
-echo "Running the app..."
+echo "✔️ Dependencies installed."
+
 if [ "$1" == "staging" ]; then
+  echo "=== Starting app in development mode..."
   npm run dev
 else
   if [ "$1" == "rebuild" ]; then
-    NODE_OPTIONS="--max-old-space-size=512" npm run build
+    echo "=== Building production version..."
+    NODE_OPTIONS="--max-old-space-size=512" nice -n 10 npm run build
+    echo "✔️ Build completed."
   fi
-  
+
+  echo "=== Starting app in production mode on port 6061..."
   npm run start -- -p 6061
 fi
