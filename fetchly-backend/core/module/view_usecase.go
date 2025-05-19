@@ -364,27 +364,6 @@ func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entit
 }
 
 func handleViewLayout(viewLayoutConfig map[string]any, fields []map[string]any, request entity.GetViewContentByKeysRequest) (map[string]any, error) {
-	// TODO: inject view schema into view layout respectively
-
-	/*
-		example of view layout json:
-		{
-				"children": [
-						{
-								"class_name": "",
-								"props": {},
-								"type": "table"
-						}
-				],
-				"class_name": "",
-				"props": {},
-				"type": "webView"
-		}
-
-		because the layout is dynamic, we need to handle it in a generic way
-		it will always have children and type, and it can be recursive
-	*/
-
 	// check if viewLayoutConfig is nil
 	if viewLayoutConfig == nil {
 		return nil, nil
@@ -395,57 +374,206 @@ func handleViewLayout(viewLayoutConfig map[string]any, fields []map[string]any, 
 		return nil, fmt.Errorf("viewLayoutConfig is not a map")
 	}
 
-	switch viewLayoutConfig["type"] {
-	case "webView", "mobileView":
-		// check if children is a slice
-		if reflect.TypeOf(viewLayoutConfig["children"]).Kind() != reflect.Slice {
-			return nil, fmt.Errorf("children is not a slice")
+	componentType, ok := viewLayoutConfig["type"].(string)
+	if !ok {
+		return nil, fmt.Errorf("component type is not a string")
+	}
+
+	// Handle props if they exist
+	props := map[string]any{}
+	if propsVal, ok := viewLayoutConfig[entity.PROPS]; ok {
+		if propsMap, ok := propsVal.(map[string]any); ok {
+			props = propsMap
+		}
+	}
+
+	// Handle className if it exists
+	className := ""
+	if classNameVal, ok := viewLayoutConfig[entity.CLASS_NAME]; ok {
+		if classNameStr, ok := classNameVal.(string); ok {
+			className = classNameStr
+		}
+	}
+
+	switch componentType {
+	case entity.TypeWebView, entity.TypeMobileView:
+		// Handle children recursively
+		if children, ok := viewLayoutConfig["children"].([]any); ok {
+			for i, child := range children {
+				if childMap, ok := child.(map[string]any); ok {
+					childConfig, err := handleViewLayout(childMap, fields, request)
+					if err != nil {
+						return nil, err
+					}
+					children[i] = childConfig
+				}
+			}
+			viewLayoutConfig["children"] = children
 		}
 
-		// iterate children
-		for i := 0; i < reflect.ValueOf(viewLayoutConfig["children"]).Len(); i++ {
-			child := reflect.ValueOf(viewLayoutConfig["children"]).Index(i)
+	case entity.TypeGrid, entity.TypeGridItem, entity.TypeRow, entity.TypeColumn:
+		// Handle grid system components
+		if className == "" {
+			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("%s__%s", componentType, request.ObjectCode)
+		}
 
-			// do recursion
-			childConfig, _ := handleViewLayout(child.Interface().(map[string]any), fields, request)
+		// Handle children recursively
+		if children, ok := viewLayoutConfig["children"].([]any); ok {
+			for i, child := range children {
+				if childMap, ok := child.(map[string]any); ok {
+					childConfig, err := handleViewLayout(childMap, fields, request)
+					if err != nil {
+						return nil, err
+					}
+					children[i] = childConfig
+				}
+			}
+			viewLayoutConfig["children"] = children
+		}
 
-			if childConfig != nil {
-				// set child config
-				child.Set(reflect.ValueOf(childConfig))
+		// Validate grid props
+		if componentType == entity.TypeGridItem {
+			if props["xs"] != nil {
+				xs, ok := props["xs"].(float64)
+				if !ok || xs < 1 || xs > 12 {
+					return nil, fmt.Errorf("invalid xs value: must be between 1 and 12")
+				}
+			}
+			// Similar validation for sm, md, lg, xl
+			for _, size := range []string{"sm", "md", "lg", "xl"} {
+				if props[size] != nil {
+					val, ok := props[size].(float64)
+					if !ok || val < 1 || val > 12 {
+						return nil, fmt.Errorf("invalid %s value: must be between 1 and 12", size)
+					}
+				}
 			}
 		}
-	case "table", "detail", "form", "navigation":
-		className := ""
-		if _, ok := viewLayoutConfig[entity.CLASS_NAME]; ok {
-			className = viewLayoutConfig[entity.CLASS_NAME].(string)
-		}
 
+	case entity.TypeScoreCard:
 		if className == "" {
-			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("%s__%s", viewLayoutConfig["type"], request.ObjectCode)
+			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("scorecard__%s", request.ObjectCode)
 		}
 
-		props := map[string]any{}
-		if _, ok := viewLayoutConfig[entity.PROPS]; ok {
-			props = viewLayoutConfig[entity.PROPS].(map[string]any)
+		// Validate score card configuration
+		if config, ok := props["config"].(map[string]any); ok {
+			// Validate layout
+			if layout, exists := config["layout"].(string); exists {
+				if layout != entity.ScoreCardLayoutHorizontal && layout != entity.ScoreCardLayoutVertical {
+					return nil, fmt.Errorf("invalid score card layout: %s", layout)
+				}
+			}
+
+			// Validate cards
+			if cards, exists := config["cards"].([]any); exists {
+				for _, card := range cards {
+					if cardMap, ok := card.(map[string]any); ok {
+						// Validate required fields
+						if _, hasTitle := cardMap["title"].(string); !hasTitle {
+							return nil, fmt.Errorf("score card must have a title")
+						}
+						if _, hasValue := cardMap["value"].(string); !hasValue {
+							return nil, fmt.Errorf("score card must have a value")
+						}
+
+						// Validate trend if exists
+						if trend, hasTrend := cardMap["trend"].(map[string]any); hasTrend {
+							if trendType, ok := trend["type"].(string); ok {
+								validTrendTypes := map[string]bool{
+									entity.ScoreCardTrendIncrease: true,
+									entity.ScoreCardTrendDecrease: true,
+									entity.ScoreCardTrendNeutral:  true,
+								}
+								if !validTrendTypes[trendType] {
+									return nil, fmt.Errorf("invalid trend type: %s", trendType)
+								}
+							}
+						}
+
+						// Validate data source if exists
+						if ds, hasDS := cardMap["dataSource"].(map[string]any); hasDS {
+							if dsType, ok := ds["type"].(string); ok {
+								switch dsType {
+								case entity.DataSourceTypeAPI, entity.DataSourceTypeStatic, entity.DataSourceTypeQuery:
+									// Valid data source type
+								default:
+									return nil, fmt.Errorf("invalid data source type: %s", dsType)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+	case entity.TypeChart:
+		if className == "" {
+			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("chart__%s", request.ObjectCode)
+		}
+
+		// Validate chart configuration
+		if subType, ok := viewLayoutConfig["subType"].(string); ok {
+			validChartTypes := map[string]bool{
+				entity.ChartTypeLine:    true,
+				entity.ChartTypeBar:     true,
+				entity.ChartTypePie:     true,
+				entity.ChartTypeArea:    true,
+				entity.ChartTypeScatter: true,
+				entity.ChartTypeRadar:   true,
+			}
+			if !validChartTypes[subType] {
+				return nil, fmt.Errorf("invalid chart subType: %s", subType)
+			}
+		}
+
+		// Handle chart data source
+		if dataSource, ok := props["dataSource"].(map[string]any); ok {
+			if dsType, ok := dataSource["type"].(string); ok {
+				switch dsType {
+				case entity.DataSourceTypeAPI, entity.DataSourceTypeStatic, entity.DataSourceTypeQuery:
+					// Valid data source type
+				default:
+					return nil, fmt.Errorf("invalid data source type: %s", dsType)
+				}
+			}
+		}
+
+	case entity.TypeTable, entity.TypeDetail, entity.TypeForm, entity.TypeNavigation:
+		// Handle standard components
+		if className == "" {
+			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("%s__%s", componentType, request.ObjectCode)
 		}
 
 		isInjectProps := false
-
-		// check if field object code exists, if yes, then check if object code value is the same with the object code in request
 		if objCode, exists := props[entity.OBJECT_CODE]; !exists || objCode.(string) == "" || objCode.(string) == request.ObjectCode {
 			isInjectProps = true
 		}
 
 		if isInjectProps {
-			// handle props injection from fields
-			if _, ok := viewLayoutConfig[entity.PROPS]; ok {
-				props := viewLayoutConfig[entity.PROPS].(map[string]any)
-				props[entity.FIELDS] = fields
-				props[entity.OBJECT_CODE] = request.ObjectCode
-				props[entity.TENANT_CODE] = request.TenantCode
+			props[entity.FIELDS] = fields
+			props[entity.OBJECT_CODE] = request.ObjectCode
+			props[entity.TENANT_CODE] = request.TenantCode
+			viewLayoutConfig[entity.PROPS] = props
+		}
 
-				viewLayoutConfig[entity.PROPS] = props
+	case entity.TypeContainer, entity.TypeSection:
+		// Handle container components
+		if className == "" {
+			viewLayoutConfig[entity.CLASS_NAME] = fmt.Sprintf("%s__%s", componentType, request.ObjectCode)
+		}
+
+		// Handle children recursively
+		if children, ok := viewLayoutConfig["children"].([]any); ok {
+			for i, child := range children {
+				if childMap, ok := child.(map[string]any); ok {
+					childConfig, err := handleViewLayout(childMap, fields, request)
+					if err != nil {
+						return nil, err
+					}
+					children[i] = childConfig
+				}
 			}
+			viewLayoutConfig["children"] = children
 		}
 	}
 
