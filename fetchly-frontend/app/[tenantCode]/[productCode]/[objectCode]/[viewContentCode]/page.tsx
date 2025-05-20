@@ -80,6 +80,13 @@ export default function DynamicPage() {
   const [responseData, setResponseData] = useState<any>(null);
   const [viewContent, setViewContent] = useState<any>(null);
   const [viewLayout, setViewLayout] = useState<any>(null);
+  const [buttonColors, setButtonColors] = useState({
+    primary: '#0891b2',
+    secondary: '#4b5563',
+    hoverPrimary: '#0e7490',
+    hoverSecondary: '#374151',
+    textColor: 'light' as 'dark' | 'light'
+  });
 
   const [isAPIResponseAccordionOpen, setIsAPIResponseAccordionOpen] = useState(false);
   const [isAPIResponseDataAccordionOpen, setIsAPIResponseDataAccordionOpen] = useState(false);
@@ -369,9 +376,13 @@ export default function DynamicPage() {
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
                       <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        className="cursor-pointer flex items-center gap-2 m-2 px-3 py-2 rounded-lg transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none hover:brightness-110"
                         onClick={() => {
                           addNewItem()
+                        }}
+                        style={{
+                          backgroundColor: buttonColors.primary,
+                          color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
                         }}
                       >
                         <PlusCircle size={18} />
@@ -379,9 +390,13 @@ export default function DynamicPage() {
                       </button>
 
                       <button
-                        className="cursor-pointer flex items-center gap-2 m-2 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        className="cursor-pointer flex items-center gap-2 m-2 px-3 py-2 rounded-lg transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none hover:brightness-110"
                         onClick={() => {
                           setIsSidebarOpen(true);
+                        }}
+                        style={{
+                          backgroundColor: buttonColors.secondary,
+                          color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
                         }}
                       >
                         <Filter size={18} />
@@ -669,6 +684,7 @@ export default function DynamicPage() {
                         viewContentCode
                       }}
                       refreshData={() => fetchData(responseLayout, currentPage)}
+                      onColorPaletteChange={setButtonColors}
                     />
 
                     <div className="flex justify-end mt-4 mr-4 pb-4">

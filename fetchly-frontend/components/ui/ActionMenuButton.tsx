@@ -11,9 +11,10 @@ interface ActionMenuButtonProps {
   objectCode: string;
   viewContentCode: string;
   onDeleteSuccess?: () => void;
+  style?: React.CSSProperties;
 }
 
-const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewContentCode, onDeleteSuccess }: ActionMenuButtonProps) => {
+const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewContentCode, onDeleteSuccess, style }: ActionMenuButtonProps) => {
   const [open, setOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -64,7 +65,6 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
       }
 
       const data = await dataResponse.json();
-
 
       // Check for 200 and redirect
       if (dataResponse.status === 200) {
@@ -127,7 +127,8 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
     <div ref={menuRef} className="relative inline-block text-left">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray font-semibold py-1 px-1 rounded-md transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+        className="cursor-pointer font-semibold py-1 px-1 rounded-md transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+        style={style}
       >
         <MoreVertical className="w-5 h-5" />
       </button>

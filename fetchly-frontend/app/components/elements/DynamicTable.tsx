@@ -1,4 +1,6 @@
+import { dashboardConfig } from "@/app/appConfig";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
+import { useEffect, useState } from "react";
 
 const metadataColumnList = [
   "created_at",
@@ -36,6 +38,13 @@ interface DynamicTableProps {
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
   routeParams: RouteParams;
   refreshData?: () => void;
+  onColorPaletteChange?: (colors: {
+    primary: string;
+    secondary: string;
+    hoverPrimary: string;
+    hoverSecondary: string;
+    textColor: 'dark' | 'light';
+  }) => void;
 }
 
 export function DynamicTable({
@@ -49,8 +58,55 @@ export function DynamicTable({
   actionButtonOpen,
   setActionButtonOpen,
   routeParams,
-  refreshData
+  refreshData,
+  onColorPaletteChange
 }: DynamicTableProps) {
+  const [colorPalette, setColorPalette] = useState<string[]>([]);
+  const [textColor, setTextColor] = useState<'dark' | 'light'>('light');
+
+  useEffect(() => {
+    const fetchTenantData = async () => {
+      try {
+        const response = await fetch(
+          `${dashboardConfig.backendAPIURL}/t/${routeParams.tenantCode}/p/${routeParams.productCode}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch tenant data");
+        }
+
+        const data = await response.json();
+        const tenantConfig = data.data?.tenant_product_config?.value;
+
+        if (tenantConfig?.props?.color_palette?.length > 0) {
+          setColorPalette(tenantConfig.props.color_palette);
+          onColorPaletteChange?.({
+            primary: tenantConfig.props.color_palette[0] || '#0891b2',
+            secondary: tenantConfig.props.color_palette[1] || '#4b5563',
+            hoverPrimary: tenantConfig.props.color_palette[2] || '#0e7490',
+            hoverSecondary: tenantConfig.props.color_palette[3] || '#374151',
+            textColor: tenantConfig.props.text_color || 'light'
+          });
+        }
+
+        if (tenantConfig?.props?.text_color) {
+          setTextColor(tenantConfig.props.text_color);
+        }
+      } catch (error) {
+        console.error("Tenant API error:", error);
+      }
+    };
+
+    fetchTenantData();
+  }, [routeParams.tenantCode, routeParams.productCode, onColorPaletteChange]);
+
   return (
     <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
       <div className="relative h-full">
