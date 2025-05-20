@@ -2,6 +2,7 @@
 
 import { Chart } from '@/app/components/elements/Chart';
 import { Heroes } from '@/app/components/elements/Heroes';
+import { PageTitle } from '@/app/components/elements/PageTitle';
 import { ScoreCard } from '@/app/components/elements/ScoreCard';
 import { Text } from '@/app/components/elements/Text';
 import Footer from '@/app/components/Footer';
@@ -21,6 +22,12 @@ interface LayoutProps {
   props?: any;
   class_name?: string;
   subType?: string;
+  viewContent?: {
+    name: string;
+    object?: {
+      display_name?: string;
+    };
+  };
 }
 
 interface RouteParams {
@@ -47,9 +54,20 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   heroes: Heroes,
   menu: Menu,
   footer: Footer,
+  pageTitle: PageTitle,
 };
 
-export function DynamicLayout({ layout }: { layout: LayoutProps }) {
+interface DynamicLayoutProps {
+  layout: LayoutProps;
+  viewContent?: {
+    name: string;
+    object?: {
+      display_name?: string;
+    };
+  };
+}
+
+export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
   console.log('DynamicLayout received:', layout);
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode = 'default', viewContentCode = 'default' } = params;
@@ -65,7 +83,7 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
 
     const childElements = config.children?.map((child, index) => {
       console.log('Rendering child:', child.type);
-      return renderComponent({ ...child, key: `child-${index}` });
+      return renderComponent({ ...child, key: `child-${index}`, viewContent });
     });
 
     // Special handling for Footer component
@@ -122,7 +140,6 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
 
     // Special handling for Heroes component
     if (config.type.toLowerCase() === 'heroes') {
-      console.log('Heroes config:', config);
       return (
         <ComponentType
           key={config.props?.key}
@@ -165,7 +182,6 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
 
     // Special handling for GridItem components
     if (config.type.toLowerCase() === 'griditem') {
-      console.log('GridItem config:', config);
       const gridProps = {
         key: config.props?.key,
         className: config.class_name,
@@ -176,11 +192,22 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
         xl: config.props?.xl,
         style: config.props?.style
       };
-      console.log('Processed GridItem props:', gridProps);
+
       return (
         <ComponentType {...gridProps}>
           {childElements}
         </ComponentType>
+      );
+    }
+
+    // Special handling for PageTitle component
+    if (config.type.toLowerCase() === 'pagetitle') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          viewContent={viewContent}
+        />
       );
     }
 
@@ -201,5 +228,5 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
     );
   };
 
-  return layout ? renderComponent(layout) : null;
+  return layout ? renderComponent({ ...layout, viewContent }) : null;
 } 

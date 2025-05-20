@@ -275,13 +275,9 @@ export default function DynamicPage() {
     });
 
     setSelectedField("");
-
-    console.log("filters", filters);
   };
 
   const applyDataFilter = () => {
-    console.log(JSON.stringify({ filters }, null, 2))
-
     setIsSidebarOpen(false);
     setIsLoading(true);
     fetchData(responseLayout, currentPage);
@@ -317,8 +313,6 @@ export default function DynamicPage() {
       updated.filter_item[field].operator = value;
       return [updated];
     });
-
-    console.log("filters", filters);
   };
 
   const updateField = (field: string, key: "value" | "operator", value: string) => {
@@ -329,8 +323,6 @@ export default function DynamicPage() {
       }
       return [updated];
     });
-
-    console.log("filters", filters);
   };
 
   const deleteField = (field: string) => {
@@ -839,7 +831,7 @@ export default function DynamicPage() {
               );
             }
             // Handle other component types using DynamicLayout
-            return <DynamicLayout key={index} layout={child} />;
+            return <DynamicLayout key={index} layout={child} viewContent={viewContent} />;
           })}
         </div>
 
@@ -939,7 +931,7 @@ export default function DynamicPage() {
       {/* Footer container with margin-top auto to push it to bottom */}
       <div className="mt-auto">
         {footerComponent && (
-          <DynamicLayout layout={footerComponent} />
+          <DynamicLayout layout={footerComponent} viewContent={viewContent} />
         )}
       </div>
     </motion.div>

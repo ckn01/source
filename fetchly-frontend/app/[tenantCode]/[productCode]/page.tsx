@@ -77,8 +77,7 @@ export default function ProductPage() {
       }
 
       const data = await response.json();
-      console.log('API Response data:', data.data); // Debug log
-      console.log('API Response layout:', data.data.layout); // Debug layout specifically
+
       setRecords(data.data);
     } catch (error) {
       console.error("Records API error:", error);

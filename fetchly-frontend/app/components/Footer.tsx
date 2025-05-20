@@ -58,8 +58,6 @@ export default function Footer({ className = '' }: FooterProps) {
 
       const data = await response.json();
 
-      console.log("tenantData", data.data);
-
       setTenantData(data.data);
     } catch (error) {
       console.error("Tenant API error:", error);

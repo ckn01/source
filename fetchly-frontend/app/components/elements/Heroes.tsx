@@ -39,8 +39,6 @@ export function Heroes({
   const [isVisible, setIsVisible] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  console.log('Heroes props:', { background, effect, backgroundImage, automateSlider, children, className, style });
-
   // Filter out only heroesItem type children
   const heroItems = Array.isArray(children) ? children.filter(child => child?.type === 'heroesItem') : [];
 
