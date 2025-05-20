@@ -1,12 +1,16 @@
 'use client';
 
 import { Chart } from '@/app/components/elements/Chart';
+import { Heroes } from '@/app/components/elements/Heroes';
 import { ScoreCard } from '@/app/components/elements/ScoreCard';
 import { Text } from '@/app/components/elements/Text';
+import Footer from '@/app/components/Footer';
 import { Container } from '@/app/components/layout/Container';
 import { Grid } from '@/app/components/layout/Grid';
 import { GridItem } from '@/app/components/layout/GridItem';
+import { MaxWidthContainer } from '@/app/components/layout/MaxWidthContainer';
 import { Section } from '@/app/components/layout/Section';
+import Menu from '@/app/components/Menu';
 import Navbar from '@/app/components/Navbar';
 import { useParams } from 'next/navigation';
 import { ReactNode } from 'react';
@@ -31,6 +35,7 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   webView: Container,
   webview: Container,
   container: Container,
+  maxWidthContainer: MaxWidthContainer,
   section: Section,
   grid: Grid,
   gridItem: GridItem,
@@ -39,6 +44,9 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   scorecard: ScoreCard,
   chart: Chart,
   navbar: Navbar,
+  heroes: Heroes,
+  menu: Menu,
+  footer: Footer,
 };
 
 export function DynamicLayout({ layout }: { layout: LayoutProps }) {
@@ -59,6 +67,31 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
       console.log('Rendering child:', child.type);
       return renderComponent({ ...child, key: `child-${index}` });
     });
+
+    // Special handling for Footer component
+    if (config.type.toLowerCase() === 'footer') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          {...config.props}
+        />
+      );
+    }
+
+    // Special handling for MaxWidthContainer component
+    if (config.type.toLowerCase() === 'maxwidthcontainer') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          maxWidth={config.props?.maxWidth}
+          align={config.props?.align}
+        >
+          {childElements}
+        </ComponentType>
+      );
+    }
 
     // Special handling for Chart component
     if (config.type.toLowerCase() === 'chart') {
@@ -82,6 +115,32 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
           productCode={productCode}
           objectCode={objectCode}
           viewContentCode={viewContentCode}
+          {...config.props}
+        />
+      );
+    }
+
+    // Special handling for Heroes component
+    if (config.type.toLowerCase() === 'heroes') {
+      console.log('Heroes config:', config);
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          {...config.props}
+          children={config.children}
+        />
+      );
+    }
+
+    // Special handling for Menu component
+    if (config.type.toLowerCase() === 'menu') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          viewContentCode={config.props?.viewContentCode}
+          overflowType={config.props?.overflowType}
           {...config.props}
         />
       );
