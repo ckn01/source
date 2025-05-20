@@ -22,7 +22,11 @@ export function Container({ children, className, style }: ContainerProps) {
       )}
       style={style}
     >
-      {children}
+      {React.Children.map(children, (child, index) => (
+        <React.Fragment key={`container-child-${index}`}>
+          {child}
+        </React.Fragment>
+      ))}
     </div>
   );
 } 
