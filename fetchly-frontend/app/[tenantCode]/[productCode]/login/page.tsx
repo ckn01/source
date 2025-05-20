@@ -93,11 +93,15 @@ export default function LoginPage() {
   }, [tenantCode, productCode]);
 
   return (
-
     <div
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 bg-blend-overlay bg-cover bg-center relative"
+      className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 bg-blend-overlay bg-cover bg-center relative overflow-hidden"
       style={{
-        backgroundImage: `url('/bg-login.png')`,
+        backgroundImage: `url(${tenantData?.tenant_product_config?.value?.props?.background_image ? `'/${tenantData?.tenant_product_config?.value?.props?.background_image}'` : '/bg-login.png'})`,
+        backgroundSize: '120% 120%',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
+        height: '100%'
       }}
     >
       {/* Floating copyright */}
@@ -116,13 +120,13 @@ export default function LoginPage() {
             <Image
               src={`/${tenantData?.tenant_product_config?.value?.icon}`}
               alt="Logo"
-              width={128} // adjust as needed
-              height={128}
-              className="w-32 mb-4"
+              width={256}
+              height={256}
+              className={`${tenantData?.tenant_product_config?.value?.props?.icon_width ? tenantData?.tenant_product_config?.value?.props?.icon_width : "w-64"} mb-4`}
             />
           }
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            {tenantData?.tenant_serial__name?.display_value}
+            {tenantData?.tenant_product_config?.value?.header_title ? tenantData?.tenant_product_config?.value?.header_title : tenantData?.tenant_serial__name?.display_value}
           </h1>
           <p className="text-base text-gray-600">
             {tenantData?.tenant_product_config?.value?.description}

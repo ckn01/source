@@ -1,12 +1,13 @@
 "use client"; // Client component for interactivity
 
 import { dashboardConfig } from "@/app/appConfig";
+import Dialog from "@/components/ui/Dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { openDB } from 'idb';
 import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 
 
@@ -87,7 +88,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [tenantData, setTenantData] = useState<any>(null);
   const [tenantConfig, setTenantConfig] = useState<any>(null);
   const [appTitle, setAppTitle] = useState<string>(dashboardConfig.title);
+  const [tenantName, setTenantName] = useState<string>("");
+  const [colorPalette, setColorPalette] = useState<string[]>([]);
+  const [textColor, setTextColor] = useState<'dark' | 'light'>('light');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [tenantIcon, setTenantIcon] = useState<string>("");
   const pathname = usePathname();
+  const router = useRouter();
   const noSidebarRoutes = ["login", "register", "forgot-password"];
   const [currentUser, setCurrentUser] = useState<Record<string, any>>({});
 
@@ -103,7 +111,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const fetchTenant = async () => {
     try {
       const response = await fetch(
-        `${dashboardConfig.backendAPIURL}/t/${tenantCode}`,
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}`,
         {
           method: "POST",
           headers: {
@@ -123,11 +131,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setTenantData(tenantData);
 
       // fetching app title from tenant data
-      const tenantConfig = tenantData?.tenant_config?.value
+      const tenantConfig = tenantData?.tenant_product_config?.value
       setTenantConfig(tenantConfig);
 
       if (tenantConfig?.header_title) {
         setAppTitle(tenantConfig?.header_title)
+      }
+
+      if (tenantConfig?.icon) {
+        setTenantIcon(`/${tenantConfig.icon}`)
+      }
+
+      if (tenantData?.tenant_serial__name?.display_value) {
+        setTenantName(tenantData.tenant_serial__name.display_value)
+      }
+
+      if (tenantConfig?.props?.color_palette?.length > 0) {
+        setColorPalette(tenantConfig.props.color_palette)
+      }
+
+      if (tenantConfig?.props?.text_color) {
+        setTextColor(tenantConfig.props.text_color)
       }
     } catch (error) {
       console.error("Tenant API error:", error);
@@ -179,7 +203,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     console.log("currentUser", currentUser)
   }, [currentUser])
 
-  const SidebarMenu = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
+  const SidebarMenu = ({ isSidebarOpen, textColor }: { isSidebarOpen: boolean, textColor: 'dark' | 'light' }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const pathname = usePathname();
 
@@ -230,16 +254,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div>
                       <button
                         onClick={() => toggleExpand(item.path)}
-                        className={`w-full flex items-center justify-between p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"
-                          }`}
+                        className={`w-full flex items-center justify-between p-3 pl-3 transition-colors text-lg ${textColor === 'dark' ? 'text-gray-900' : 'text-amber-200'} ${isSidebarOpen ? "text-left" : "text-center"} ${colorPalette.length > 0 ? 'hover:bg-opacity-20 hover:bg-white' : 'hover:bg-amber-600'}`}
                       >
                         <span className="flex items-center gap-x-1">
-                          <LucideIcon className="w-6 h-6" />
-                          {isSidebarOpen ? item.title : (expanded[item.path] ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
+                          <LucideIcon className={`w-6 h-6 ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`} />
+                          {isSidebarOpen ? item.title : (expanded[item.path] ? <ChevronDown size={16} className={textColor === 'dark' ? 'text-gray-900' : 'text-white'} /> : <ChevronRight size={16} className={textColor === 'dark' ? 'text-gray-900' : 'text-white'} />)}
                         </span>
                         {isSidebarOpen && (
                           <span>
-                            {expanded[item.path] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            {expanded[item.path] ? <ChevronDown size={16} className={textColor === 'dark' ? 'text-gray-900' : 'text-white'} /> : <ChevronRight size={16} className={textColor === 'dark' ? 'text-gray-900' : 'text-white'} />}
                           </span>
                         )}
                       </button>
@@ -260,10 +283,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 <Link
                                   href={`/${tenantCode}/${productCode}${child.url}`}
                                   className={`flex items-center gap-x-1 p-4 pl-4 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
-                                    ? "hover:bg-amber-600 bg-amber-700 font-semibold text-white"
-                                    : "hover:bg-amber-600 text-amber-100"}`}
+                                    ? colorPalette.length > 0
+                                      ? 'bg-opacity-20 bg-white font-bold text-amber-800'
+                                      : 'bg-opacity-100 hover:bg-amber-600 bg-amber-800 font-bold text-amber-100'
+                                    : colorPalette.length > 0
+                                      ? `hover:bg-opacity-20 hover:bg-white ${textColor === 'dark' ? 'text-gray-900' : 'text-amber-100'}`
+                                      : 'hover:bg-amber-600 text-amber-100'
+                                    }`}
                                 >
-                                  <LucideIcon className="w-6 h-6" />
+                                  <LucideIcon className={`w-6 h-6 ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`} />
                                   {isSidebarOpen && child.title}
                                 </Link>
                               </li>
@@ -276,9 +304,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   ) : (
                     <Link
                       href={`/${tenantCode}/${productCode}/${item.url}`}
-                      className={`flex items-center gap-x-2 p-3 pl-3 hover:bg-amber-600 transition-colors text-lg text-amber-200 ${isSidebarOpen ? "text-left" : "text-center"}`}
+                      className={`flex items-center gap-x-2 p-3 pl-3 transition-colors text-lg ${textColor === 'dark' ? 'text-gray-900' : 'text-amber-200'} ${isSidebarOpen ? "text-left" : "text-center"} ${colorPalette.length > 0 ? 'hover:bg-opacity-20 hover:bg-white' : 'hover:bg-amber-600'}`}
                     >
-                      <LucideIcon className="w-6 h-6" />
+                      <LucideIcon className={`w-6 h-6 ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`} />
                       {isSidebarOpen && item.title}
                     </Link>
                   )}
@@ -291,37 +319,87 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      const db = await initDB();
+      await db.delete('auth', 'session');
+
+      const path = `/${tenantCode}/${productCode}/login`;// redirect to login page
+      router.push(path);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
       {!isNoSidebar &&
         <aside
-          style={{ width: sidebarWidth }}
-          className="relative flex flex-col h-screen bg-gradient-to-b from-amber-900 to-amber-700 text-white shadow-lg transition-all duration-300"
+          style={{
+            width: sidebarWidth,
+            background: colorPalette.length > 0
+              ? `linear-gradient(135deg, ${colorPalette.join(', ')})`
+              : undefined,
+            borderRight: colorPalette.length > 0
+              ? `1px solid ${colorPalette[0]}`
+              : undefined
+          }}
+          className={`relative flex flex-col h-screen ${colorPalette.length === 0 ? 'bg-gradient-to-b from-amber-900 to-amber-700' : ''} text-white shadow-lg transition-all duration-300`}
         >
           {/* Header */}
-          <div className="p-4 pl-3 flex items-center justify-between border-b border-amber-600">
+          <div
+            className={`p-4 pl-3 flex items-center justify-between border-b ${colorPalette.length > 0 ? '' : 'border-amber-600'}`}
+            style={{
+              borderColor: colorPalette.length > 0 ? colorPalette[0] : undefined
+            }}
+          >
             {isSidebarOpen && (
-              <h2 className="text-3xl font-semibold tracking-wide">
-                {appTitle}
-              </h2>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  {tenantIcon && (
+                    <img
+                      src={tenantIcon}
+                      alt="Tenant Logo"
+                      className="w-9 h-9 object-contain"
+                    />
+                  )}
+                  <div className="flex flex-col">
+                    <h2 className={`text-base min-[200px]:text-lg min-[300px]:text-xl font-semibold tracking-wide ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`}>
+                      {appTitle}
+                    </h2>
+                    <span className={`text-xs min-[200px]:text-sm ${textColor === 'dark' ? 'text-gray-700' : 'text-amber-200/80'}`}>
+                      {tenantName}
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg bg-amber-600 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors  shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+              className={`p-2 rounded-lg focus:outline-none focus:ring-2 transition-colors shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none ${colorPalette.length > 0 ? '' : 'bg-amber-600 hover:bg-amber-500 focus:ring-amber-400'}`}
+              style={{
+                backgroundColor: colorPalette.length > 0 ? colorPalette[1] : undefined,
+                '--hover-color': colorPalette.length > 0 ? colorPalette[2] : undefined,
+                '--focus-ring-color': colorPalette.length > 0 ? colorPalette[0] : undefined
+              } as React.CSSProperties}
             >
               {isSidebarOpen ? (
-                <ChevronLeft className="w-4 h-4 text-white" />
+                <ChevronLeft className={`w-4 h-4 ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`} />
               ) : (
-                <ChevronRight className="w-4 h-4 text-white" />
+                <ChevronRight className={`w-4 h-4 ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`} />
               )}
             </button>
           </div>
 
           {/* Navigation */}
           <div className="flex-1 overflow-y-auto">
-            <nav className="mt-2 bg-amber-800">
-              <SidebarMenu isSidebarOpen={isSidebarOpen} />
+            <nav className={`mt-2 ${colorPalette.length > 0 ? '' : 'bg-amber-800'}`}
+              style={{
+                backgroundColor: colorPalette.length > 0 ? colorPalette[1] : undefined
+              }}
+            >
+              <SidebarMenu isSidebarOpen={isSidebarOpen} textColor={textColor} />
             </nav>
           </div>
 
@@ -346,9 +424,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               document.addEventListener("mouseup", onMouseUp);
             }}
             className="absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10"
+            style={{
+              pointerEvents: 'none'
+            }}
           >
             {/* Visual drag indicator */}
-            <div className="h-full w-full flex flex-col items-center justify-center gap-1 group-hover:gap-1.5 transition-all duration-150">
+            <div
+              className="h-full w-full flex flex-col items-center justify-center gap-1 group-hover:gap-1.5 transition-all duration-150"
+              style={{
+                pointerEvents: 'auto'
+              }}
+            >
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="w-1.5 h-1.5 bg-white/40 group-hover:bg-white/70 rounded-full"></div>
               ))}
@@ -357,19 +443,102 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* User Profile */}
           {tenantConfig?.is_required_to_login &&
-            <div className="mt-auto border-t border-cyan-600 p-2 pb-4 pt-4 flex items-center gap-3 bg-cyan-800">
-              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
-                {currentUser?.name?.display_value?.charAt(0)}
-              </div>
-              {isSidebarOpen &&
-                <div className="flex flex-col">
-                  <span className="text-md font-medium mb-1">{currentUser?.name?.display_value}</span>
-                  <span className="text-xs text-amber-200 font-bold mb-1">{currentUser?.email?.display_value}</span>
-                  <div className="text-xs text-amber-100 mb-1">{currentUser?.username?.display_value}</div>
+            <div className="mt-auto">
+              <div
+                className={`border-t p-2 pb-4 pt-4 flex items-center gap-3 cursor-pointer ${colorPalette.length > 0 ? '' : 'border-cyan-600 bg-cyan-800'}`}
+                style={{
+                  borderColor: colorPalette.length > 0 ? colorPalette[0] : undefined,
+                  backgroundColor: colorPalette.length > 0 ? colorPalette[3] || colorPalette[2] : undefined
+                }}
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              >
+                <div className={`w-14 h-14 rounded-full ${textColor === 'dark' ? 'bg-gray-800' : 'bg-white/20'} flex items-center justify-center font-bold text-lg ${textColor === 'dark' ? 'text-white' : 'text-white'}`}>
+                  {currentUser?.name?.display_value?.charAt(0)}
                 </div>
-              }
+                {isSidebarOpen &&
+                  <div className="flex flex-col flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-md font-medium ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`}>
+                        {currentUser?.name?.display_value}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''} ${textColor === 'dark' ? 'text-gray-900' : 'text-white'}`}
+                      />
+                    </div>
+                    <span className={`text-xs font-bold ${textColor === 'dark' ? 'text-gray-700' : 'text-amber-200'}`}>
+                      {currentUser?.email?.display_value}
+                    </span>
+                    <div className={`text-xs ${textColor === 'dark' ? 'text-gray-600' : 'text-amber-100'}`}>
+                      {currentUser?.username?.display_value}
+                    </div>
+                  </div>
+                }
+              </div>
+
+              {/* User Menu Accordion */}
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div
+                      className={`border-t ${colorPalette.length > 0 ? '' : 'border-cyan-600'}`}
+                      style={{
+                        borderColor: colorPalette.length > 0 ? colorPalette[0] : undefined,
+                        backgroundColor: colorPalette.length > 0 ? colorPalette[3] || colorPalette[2] : undefined
+                      }}
+                    >
+                      <Link
+                        href={`/${tenantCode}/${productCode}/profile`}
+                        className={`flex items-center gap-2 p-3 transition-colors ${textColor === 'dark' ? 'text-gray-900 hover:bg-white/20' : 'text-white hover:bg-gray-900/20'}`}
+                      >
+                        <Icons.User className="w-4 h-4" />
+                        <span>Profile</span>
+                      </Link>
+                      <Link
+                        href={`/${tenantCode}/${productCode}/settings`}
+                        className={`flex items-center gap-2 p-3 transition-colors ${textColor === 'dark' ? 'text-gray-900 hover:bg-white/20' : 'text-white hover:bg-gray-900/20'}`}
+                      >
+                        <Icons.Settings className="w-4 h-4" />
+                        <span>Settings</span>
+                      </Link>
+                      <button
+                        onClick={() => setIsLogoutDialogOpen(true)}
+                        className={`w-full flex items-center gap-2 p-3 transition-colors ${textColor === 'dark' ? 'text-gray-900 hover:bg-white/20' : 'text-white hover:bg-gray-900/20'}`}
+                      >
+                        <Icons.LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           }
+
+          {/* Logout Confirmation Dialog */}
+          <Dialog
+            isOpen={isLogoutDialogOpen}
+            title="Confirm Logout"
+            content="Are you sure you want to logout? You will need to login again to access your account."
+            type="warning"
+            onCancel={() => setIsLogoutDialogOpen(false)}
+            actions={[
+              {
+                label: "Logout",
+                onClick: () => {
+                  setIsLogoutDialogOpen(false);
+                  handleLogout();
+                },
+                variant: "primary",
+                type: "danger"
+              }
+            ]}
+          />
         </aside >
       }
 
