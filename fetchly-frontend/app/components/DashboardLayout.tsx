@@ -102,6 +102,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // check if pathname contains any of the noSidebarRoutes
   const isNoSidebar = noSidebarRoutes.some((route) => pathname.includes(route));
 
+  // check if sidebar should be enabled based on tenant config
+  const isSidebarEnabled = tenantConfig?.props?.is_enable_sidebar !== false;
+
   const toggleSidebar = () => {
     setSidebarWidth((prev) => (prev > 80 ? 56 : 256)); // Toggle between collapsed and expanded
   };
@@ -330,7 +333,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      {!isNoSidebar &&
+      {!isNoSidebar && isSidebarEnabled && (
         <aside
           style={{
             width: sidebarWidth,
@@ -535,12 +538,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }
             ]}
           />
-        </aside >
-      }
-
+        </aside>
+      )}
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto" >
+      <main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto">
         {/* Optional fixed header inside main */}
         {/* <div className="p-4 border-b bg-gradient-to-r from-amber-900 to-amber-700 text-white shadow z-10">
           <h1 className="text-xl font-semibold">Page Title</h1>
