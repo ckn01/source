@@ -199,10 +199,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [tenantCode, productCode, objectCode, viewContentCode]);
 
-  useEffect(() => {
-    console.log("currentUser", currentUser)
-  }, [currentUser])
-
   const SidebarMenu = ({ isSidebarOpen, textColor }: { isSidebarOpen: boolean, textColor: 'dark' | 'light' }) => {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const pathname = usePathname();
@@ -544,7 +540,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
 
       {/* Main Content */}
-      < main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto" >
+      <main className="flex-1 bg-gray-50 h-screen flex flex-col overflow-auto" >
         {/* Optional fixed header inside main */}
         {/* <div className="p-4 border-b bg-gradient-to-r from-amber-900 to-amber-700 text-white shadow z-10">
           <h1 className="text-xl font-semibold">Page Title</h1>
