@@ -1,6 +1,7 @@
 "use client";
 
 import { dashboardConfig } from "@/app/appConfig";
+import { DynamicLayout } from "@/app/components/DynamicLayout";
 import SidebarPanel from "@/components/SidebarPanel";
 import ActionMenuButton from "@/components/ui/ActionMenuButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -227,6 +228,17 @@ export default function DynamicPage() {
   const [selectedFieldPerGroup, setSelectedFieldPerGroup] = useState<Record<string, string>>({});
 
   const [showDialog, setShowDialog] = useState(true);
+
+  // Add state to store footer component if found
+  const [footerComponent, setFooterComponent] = useState<ViewChild | null>(null);
+
+  // Find and store footer component when viewLayout changes
+  useEffect(() => {
+    if (viewLayout?.children) {
+      const footer = viewLayout.children.find((child: ViewChild) => child.type === "footer");
+      setFooterComponent(footer || null);
+    }
+  }, [viewLayout]);
 
   const handlePageClick = (pageIndex: { selected: number }) => {
     const selectedPage = pageIndex.selected + 1;
@@ -481,15 +493,21 @@ export default function DynamicPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="flex flex-col items-left justify-left min-h-screen bg-gray-100"
+      className="flex flex-col min-h-screen bg-gray-100"
     >
-      <div className="bg-white p-4 rounded-lg shadow-md">
+      <div className="flex-grow bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-cyan-600 mb-3">
           {viewContent?.object?.display_name ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})` : toLabel(objectCode)}
         </h1>
 
         <div className="space-y-4">
           {viewLayout?.children.map((child: ViewChild, index: number) => {
+            // Skip footer component as we'll render it separately
+            if (child.type === "footer") {
+              return null;
+            }
+
+            // Handle table component
             if (child.type === "table") {
               return (
                 <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-4">
@@ -810,7 +828,7 @@ export default function DynamicPage() {
                         previousLabel="Prev"
                         nextLabel="Next"
                         breakLabel={'...'}
-                        pageCount={totalPages} // Total number of pages
+                        pageCount={totalPages}
                         marginPagesDisplayed={2}
                         pageRangeDisplayed={5}
                         onPageChange={handlePageClick}
@@ -820,7 +838,8 @@ export default function DynamicPage() {
                 </Card>
               );
             }
-            return null;
+            // Handle other component types using DynamicLayout
+            return <DynamicLayout key={index} layout={child} />;
           })}
         </div>
 
@@ -915,6 +934,13 @@ export default function DynamicPage() {
             </CardContent>
           </Card>
         }
+      </div>
+
+      {/* Footer container with margin-top auto to push it to bottom */}
+      <div className="mt-auto">
+        {footerComponent && (
+          <DynamicLayout layout={footerComponent} />
+        )}
       </div>
     </motion.div>
   );
