@@ -7,6 +7,8 @@ import { Container } from '@/app/components/layout/Container';
 import { Grid } from '@/app/components/layout/Grid';
 import { GridItem } from '@/app/components/layout/GridItem';
 import { Section } from '@/app/components/layout/Section';
+import Navbar from '@/app/components/Navbar';
+import { useParams } from 'next/navigation';
 import { ReactNode } from 'react';
 
 interface LayoutProps {
@@ -15,6 +17,14 @@ interface LayoutProps {
   props?: any;
   class_name?: string;
   subType?: string;
+}
+
+interface RouteParams {
+  tenantCode: string;
+  productCode: string;
+  objectCode: string;
+  viewContentCode: string;
+  [key: string]: string | string[];
 }
 
 const componentMap: { [key: string]: React.ComponentType<any> } = {
@@ -28,10 +38,13 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   scoreCard: ScoreCard,
   scorecard: ScoreCard,
   chart: Chart,
+  navbar: Navbar,
 };
 
 export function DynamicLayout({ layout }: { layout: LayoutProps }) {
   console.log('DynamicLayout received:', layout);
+  const params = useParams<RouteParams>();
+  const { tenantCode, productCode, objectCode = 'default', viewContentCode = 'default' } = params;
 
   const renderComponent = (config: LayoutProps): ReactNode => {
     console.log('Rendering component:', config.type);
@@ -44,7 +57,7 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
 
     const childElements = config.children?.map((child, index) => {
       console.log('Rendering child:', child.type);
-      return renderComponent({ ...child, key: index });
+      return renderComponent({ ...child, key: `child-${index}` });
     });
 
     // Special handling for Chart component
@@ -55,6 +68,21 @@ export function DynamicLayout({ layout }: { layout: LayoutProps }) {
           className={config.class_name}
           subType={config.subType}
           props={config.props}
+        />
+      );
+    }
+
+    // Special handling for Navbar component
+    if (config.type.toLowerCase() === 'navbar') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          tenantCode={tenantCode}
+          productCode={productCode}
+          objectCode={objectCode}
+          viewContentCode={viewContentCode}
+          {...config.props}
         />
       );
     }
