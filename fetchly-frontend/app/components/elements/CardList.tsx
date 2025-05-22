@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CheckCircle, ChevronRight, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import ReactPaginate from 'react-paginate';
 
 interface CardListProps {
   objectCode: string;
@@ -54,8 +55,9 @@ export function CardList({
   const [data, setData] = useState<ApiResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchData = async () => {
+  const fetchData = async (filters: any[] = [], page: number = 1) => {
     try {
       setLoading(true);
       setError(null);
@@ -68,23 +70,13 @@ export function CardList({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            page: 1,
-            page_size: 20,
+            page,
+            page_size: 2,
             object_code: objectCode,
             tenant_code: tenantCode,
             product_code: productCode,
             view_content_code: viewContentCode,
-            filters: selectedValue ? [
-              {
-                operator: "AND",
-                filter_item: {
-                  country_serial: {
-                    value: selectedValue,
-                    operator: "equal"
-                  }
-                }
-              }
-            ] : []
+            filters
           })
         }
       );
@@ -105,9 +97,48 @@ export function CardList({
 
   useEffect(() => {
     if (autoLoad || selectedValue) {
-      fetchData();
+      fetchData(selectedValue ? [
+        {
+          operator: "AND",
+          filter_item: {
+            country_serial: {
+              value: selectedValue,
+              operator: "equal"
+            }
+          }
+        }
+      ] : [], currentPage);
     }
-  }, [tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue]);
+  }, [tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue, currentPage]);
+
+  // Add event listener for table data load
+  useEffect(() => {
+    const handleTableDataLoad = (event: CustomEvent) => {
+      if (event.detail.target === className) {
+        const { params, config } = event.detail;
+        setCurrentPage(1); // Reset to first page when filter changes
+        fetchData([{
+          operator: "AND",
+          filter_item: {
+            [params.field]: {
+              value: params.value,
+              operator: "equals"
+            }
+          }
+        }], 1);
+      }
+    };
+
+    window.addEventListener('fetchly:tableDataLoad', handleTableDataLoad as EventListener);
+    return () => {
+      window.removeEventListener('fetchly:tableDataLoad', handleTableDataLoad as EventListener);
+    };
+  }, [className]);
+
+  const handlePageChange = (selectedItem: { selected: number }) => {
+    const newPage = selectedItem.selected + 1;
+    setCurrentPage(newPage);
+  };
 
   if (loading) {
     return (
@@ -135,75 +166,101 @@ export function CardList({
 
   return (
     <div className="space-y-4">
-      {data.items.map((item, index) => (
-        <motion.div
-          key={item.serial?.value || index}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.1 }}
-          whileHover={{ scale: 1.01 }}
-          className="group"
-        >
-          <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(item).map(([key, field]) => {
-                  // Skip metadata fields and empty fields
-                  if (
-                    !field?.display_value ||
-                    key.startsWith('__') ||
-                    ['serial', 'code', 'deleted_at'].includes(key)
-                  ) {
-                    return null;
-                  }
+      <div className="space-y-4">
+        {data.items.map((item, index) => (
+          <motion.div
+            key={item.serial?.value || index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            whileHover={{ scale: 1.01 }}
+            className="group"
+          >
+            <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(item).map(([key, field]) => {
+                    // Skip metadata fields and empty fields
+                    if (
+                      !field?.display_value ||
+                      key.startsWith('__') ||
+                      ['serial', 'code', 'deleted_at', 'created_at', 'updated_at', 'created_by', 'updated_by', 'id'].includes(key)
+                    ) {
+                      return null;
+                    }
 
-                  // Format the field name
-                  const fieldName = field.field_name || toLabel(key);
+                    // Format the field name
+                    const fieldName = field.field_name || toLabel(key);
 
-                  // Format the value based on data type
-                  let displayValue = field.display_value;
-                  if (field.data_type === 'Bool') {
-                    displayValue = field.value ? (
-                      <span className="flex items-center text-green-600">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-red-600">
-                        <XCircle className="w-4 h-4 mr-1" />
-                        No
-                      </span>
+                    // Format the value based on data type
+                    let displayValue = field.display_value;
+                    if (field.data_type === 'Bool') {
+                      displayValue = field.value ? (
+                        <span className="flex items-center text-green-600">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-red-600">
+                          <XCircle className="w-4 h-4 mr-1" />
+                          No
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={key}
+                        className="flex flex-col space-y-1.5 p-3 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200"
+                      >
+                        <span className="text-sm font-medium text-gray-500">
+                          {fieldName}
+                        </span>
+                        <span className="text-base text-gray-900 font-medium">
+                          {displayValue}
+                        </span>
+                      </div>
                     );
-                  }
+                  })}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <motion.button
+                    whileHover={{ x: 5 }}
+                    className="flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  >
+                    View Details
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </motion.button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
 
-                  return (
-                    <div
-                      key={key}
-                      className="flex flex-col space-y-1.5 p-3 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200"
-                    >
-                      <span className="text-sm font-medium text-gray-500">
-                        {fieldName}
-                      </span>
-                      <span className="text-base text-gray-900 font-medium">
-                        {displayValue}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 flex justify-end">
-                <motion.button
-                  whileHover={{ x: 5 }}
-                  className="flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                >
-                  View Details
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </motion.button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
+      {/* Pagination */}
+      {data.total_page > 1 && (
+        <div className="flex justify-center mt-6">
+          <ReactPaginate
+            pageCount={data.total_page}
+            pageRangeDisplayed={5}
+            marginPagesDisplayed={2}
+            onPageChange={handlePageChange}
+            containerClassName="flex space-x-2"
+            pageClassName="px-3 py-1 rounded-md hover:bg-gray-100 cursor-pointer"
+            pageLinkClassName="text-gray-700"
+            activeClassName="bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
+            previousClassName="px-3 py-1 rounded-md hover:bg-gray-100 cursor-pointer"
+            nextClassName="px-3 py-1 rounded-md hover:bg-gray-100 cursor-pointer"
+            previousLabel="Previous"
+            nextLabel="Next"
+            breakLabel="..."
+            breakClassName="px-3 py-1 cursor-pointer"
+            disabledClassName="opacity-50 cursor-not-allowed"
+            forcePage={currentPage - 1}
+          />
+        </div>
+      )}
     </div>
   );
 } 

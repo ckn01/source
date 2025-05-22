@@ -17,6 +17,17 @@ interface DropdownProps {
   size?: 'default' | 'lg';
   placeholder?: string;
   options?: DropdownOption[];
+  eventListeners?: {
+    onChange?: {
+      type: string;
+      action: string;
+      params: {
+        field: string;
+        value: string;
+      };
+      target: string;
+    };
+  };
 }
 
 interface RouteParams {
@@ -53,7 +64,8 @@ export function Dropdown({
   onChange,
   size = 'default',
   placeholder = 'Select an option',
-  options: initialOptions
+  options: initialOptions,
+  eventListeners
 }: DropdownProps) {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode } = params;
@@ -62,6 +74,7 @@ export function Dropdown({
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<string>(fieldValue || "");
 
   const fetchOptions = useCallback(async (keyword: string = "") => {
     setLoading(true);
@@ -152,6 +165,53 @@ export function Dropdown({
     debouncedSearch(keyword);
   };
 
+  const handleValueChange = async (value: string) => {
+    setSelectedValue(value);
+
+    if (onChange) {
+      onChange(value);
+    }
+
+    if (eventListeners?.onChange) {
+      const { action, params, target } = eventListeners.onChange;
+
+      if (action === 'loadTable') {
+        try {
+          // Create and dispatch a custom event that can be caught by any component
+          const event = new CustomEvent('fetchly:tableDataLoad', {
+            detail: {
+              target,
+              params: {
+                field: params.field,
+                value: value
+              },
+              config: {
+                objectCode: target.split('__')[1],
+                tenantCode,
+                productCode,
+                viewContentCode: 'default'
+              }
+            },
+            bubbles: true,
+            composed: true
+          });
+
+          // Dispatch to window so any component can listen for it
+          window.dispatchEvent(event);
+          console.log('Table load event dispatched:', {
+            target,
+            params: {
+              field: params.field,
+              value: value
+            }
+          });
+        } catch (error) {
+          console.error("Failed to trigger table data load:", error);
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (!initialOptions) {
       fetchOptions();
@@ -160,7 +220,7 @@ export function Dropdown({
 
   return (
     <div className="space-y-2">
-      <Select onValueChange={onChange} value={fieldValue}>
+      <Select onValueChange={handleValueChange} value={selectedValue}>
         <SelectTrigger className={`${className} ${size === 'lg' ? 'h-12 text-lg' : ''}`}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

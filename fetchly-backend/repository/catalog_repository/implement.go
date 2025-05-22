@@ -689,6 +689,8 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 			var formattedValue string
 
 			switch v := value.(type) {
+			case nil:
+				formattedValue = "NULL"
 			case string:
 				formattedValue = fmt.Sprintf("'%s'", v)
 			case bool:
@@ -705,7 +707,11 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 
 					for i := range val.Len() {
 						elem := val.Index(i).Interface()
-						formattedValue += fmt.Sprintf("'%v'", elem)
+						if elem == nil {
+							formattedValue += "NULL"
+						} else {
+							formattedValue += fmt.Sprintf("'%v'", elem)
+						}
 						if i < val.Len()-1 {
 							formattedValue += ", "
 						}
