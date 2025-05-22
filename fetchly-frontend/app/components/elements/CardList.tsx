@@ -1,6 +1,5 @@
 import { dashboardConfig } from "@/app/appConfig";
 import { Card, CardContent } from "@/components/ui/card";
-import { toLabel } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CheckCircle, ChevronRight, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -13,6 +12,7 @@ interface CardListProps {
   autoLoad?: boolean;
   className?: string;
   selectedValue?: string;
+  contentArrangement?: 'stacked' | 'overflow' | 'fit';
 }
 
 interface RouteParams {
@@ -55,6 +55,14 @@ interface LayoutConfig {
       display_name?: string;
     };
   };
+  fields: Array<{
+    field_code: string;
+    field_name: string;
+    data_type: string;
+    is_displayed_in_table: boolean;
+    field_order: number;
+    render_config?: string;
+  }>;
 }
 
 export function CardList({
@@ -62,7 +70,8 @@ export function CardList({
   viewContentCode,
   autoLoad = true,
   className,
-  selectedValue
+  selectedValue,
+  contentArrangement = 'stacked'
 }: CardListProps) {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode } = params;
@@ -80,7 +89,13 @@ export function CardList({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-          }
+          },
+          body: JSON.stringify({
+            object_code: objectCode,
+            tenant_code: tenantCode,
+            product_code: productCode,
+            view_content_code: viewContentCode,
+          })
         }
       );
 
@@ -110,7 +125,7 @@ export function CardList({
           },
           body: JSON.stringify({
             page,
-            page_size: 2,
+            page_size: 20,
             object_code: objectCode,
             tenant_code: tenantCode,
             product_code: productCode,
@@ -185,6 +200,63 @@ export function CardList({
     setCurrentPage(newPage);
   };
 
+  const renderCardContent = (item: Record<string, Field>) => {
+    if (!layoutConfig?.fields) return null;
+
+    return layoutConfig.fields
+      .filter(field => field.is_displayed_in_table)
+      .sort((a, b) => a.field_order - b.field_order)
+      .map(field => {
+        const fieldCode = field.field_code.split('.')[0];
+        const itemField = item[fieldCode];
+        if (!itemField?.display_value) return null;
+
+        // Handle custom render config if available
+        let displayValue = itemField.display_value;
+        if (field.render_config) {
+          try {
+            displayValue = field.render_config.replace(/\${([^}]+)}/g, (match, fieldName) => {
+              const value = item[fieldName]?.display_value || '';
+              return value;
+            });
+          } catch (error) {
+            console.error('Error processing render config:', error);
+          }
+        } else if (field.data_type === 'Bool') {
+          displayValue = itemField.value ? (
+            <span className="flex items-center text-green-600">
+              <CheckCircle className="w-4 h-4 mr-1" />
+              Yes
+            </span>
+          ) : (
+            <span className="flex items-center text-red-600">
+              <XCircle className="w-4 h-4 mr-1" />
+              No
+            </span>
+          );
+        }
+
+        return (
+          <div
+            key={field.field_code}
+            className={`
+              flex flex-col space-y-1 p-2 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200
+              ${contentArrangement === 'stacked' ? 'w-full' : ''}
+              ${contentArrangement === 'overflow' ? 'min-w-[200px] flex-shrink-0' : ''}
+              ${contentArrangement === 'fit' ? 'flex-1 min-w-[200px]' : ''}
+            `}
+          >
+            <span className="text-xs font-medium text-gray-500 truncate">
+              {field.field_name}
+            </span>
+            <span className="text-lg font-semibold text-gray-900 truncate">
+              {displayValue}
+            </span>
+          </div>
+        );
+      });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -222,53 +294,15 @@ export function CardList({
             className="group"
           >
             <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.entries(item).map(([key, field]) => {
-                    // Skip metadata fields and empty fields
-                    if (
-                      !field?.display_value ||
-                      key.startsWith('__') ||
-                      ['serial', 'code', 'deleted_at', 'created_at', 'updated_at', 'created_by', 'updated_by', 'id'].includes(key)
-                    ) {
-                      return null;
-                    }
-
-                    // Format the field name
-                    const fieldName = field.field_name || toLabel(key);
-
-                    // Format the value based on data type
-                    let displayValue = field.display_value;
-                    if (field.data_type === 'Bool') {
-                      displayValue = field.value ? (
-                        <span className="flex items-center text-green-600">
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-red-600">
-                          <XCircle className="w-4 h-4 mr-1" />
-                          No
-                        </span>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={key}
-                        className="flex flex-col space-y-1.5 p-3 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200"
-                      >
-                        <span className="text-sm font-medium text-gray-500">
-                          {fieldName}
-                        </span>
-                        <span className="text-base text-gray-900 font-medium">
-                          {displayValue}
-                        </span>
-                      </div>
-                    );
-                  })}
+              <CardContent className="p-4">
+                <div className={`
+                  ${contentArrangement === 'stacked' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3' : ''}
+                  ${contentArrangement === 'overflow' ? 'flex overflow-x-auto gap-3 pb-2' : ''}
+                  ${contentArrangement === 'fit' ? 'flex flex-wrap gap-3' : ''}
+                `}>
+                  {renderCardContent(item)}
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-3 flex justify-end">
                   <motion.button
                     whileHover={{ x: 5 }}
                     className="flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
