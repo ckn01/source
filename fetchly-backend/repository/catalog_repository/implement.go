@@ -113,7 +113,15 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 					if fieldNameKey == column[entity.FieldColumnCode] {
 						isFound = true
 						column[entity.FieldColumnCode] = fieldNameKey
-						column[entity.IsDisplayedInTable] = fieldValue.IsDisplayedInTable
+						column[entity.FieldIsDisplayedInTable] = fieldValue.IsDisplayedInTable
+
+						if fieldValue.FieldOrder != 0 {
+							column[entity.FieldFieldOrder] = fieldValue.FieldOrder
+						}
+
+						if fieldValue.RenderConfig != "" {
+							column[entity.FieldRenderConfig] = fieldValue.RenderConfig
+						}
 
 						filteredColumns = append(filteredColumns, column)
 					}
@@ -209,7 +217,9 @@ func (r *repository) handleJoinColumn(
 			entity.ForeignTable: map[string]string{
 				entity.FieldForeignColumnName: referenceColumnName,
 			},
-			entity.IsDisplayedInTable: request.Fields[fieldNameKey].IsDisplayedInTable,
+			entity.FieldIsDisplayedInTable: request.Fields[fieldNameKey].IsDisplayedInTable,
+			entity.FieldFieldOrder:         request.Fields[fieldNameKey].FieldOrder,
+			entity.FieldRenderConfig:       request.Fields[fieldNameKey].RenderConfig,
 		}
 
 		*filteredColumns = append(*filteredColumns, filteredColumn)

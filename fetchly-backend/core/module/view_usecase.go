@@ -261,6 +261,16 @@ func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entit
 						field.IsDisplayedInTable = isDisplayedInTable
 					}
 
+					field.FieldOrder = 0 // set default value
+					if fieldOrder, ok := item["field_order"].(float64); ok {
+						field.FieldOrder = int(fieldOrder)
+					}
+
+					field.RenderConfig = ""
+					if renderConfig, ok := item["render_config"].(string); ok {
+						field.RenderConfig = renderConfig
+					}
+
 					catalogQuery.Fields[key] = field
 				}
 			}
