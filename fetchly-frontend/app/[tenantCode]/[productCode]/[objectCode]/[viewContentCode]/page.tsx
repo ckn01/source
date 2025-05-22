@@ -285,6 +285,27 @@ export default function DynamicPage() {
     try {
       setIsLoading(true)
 
+      // Transform filters to match the required structure
+      const formattedFilters = filters.map(filter => ({
+        operator: filter.operator,
+        filter_item: Object.entries(filter.filter_item).reduce((acc, [key, value]) => {
+          if ('filter_item' in value) {
+            // Handle nested groups
+            acc[key] = {
+              operator: value.operator,
+              filter_item: value.filter_item
+            };
+          } else {
+            // Handle regular fields
+            acc[key] = {
+              value: value.value,
+              operator: value.operator
+            };
+          }
+          return acc;
+        }, {} as Record<string, any>)
+      }));
+
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
         {
@@ -295,7 +316,7 @@ export default function DynamicPage() {
               acc[field.field_code] = field;
               return acc;
             }, {}) || {},
-            filters: filters,
+            filters: formattedFilters,
             orders: [],
             page: page ? page : currentPage,
             page_size: 20,

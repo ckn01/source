@@ -26,6 +26,7 @@ interface TenantData {
       }>;
       copyright_text?: string;
       text_color?: 'dark' | 'light';
+      icon?: string;
       props?: {
         color_palette?: string[];
       };
@@ -74,6 +75,7 @@ export default function Footer({ className = '' }: FooterProps) {
   const colorPalette = footerConfig?.props?.color_palette || [];
   const tenantName = footerConfig?.header_title || 'Our Company';
   const tenantDescription = footerConfig?.description || tenantName;
+  const tenantIcon = footerConfig?.icon || null;
 
   const textColor = footerConfig?.text_color === 'dark' ? 'text-gray-900' : 'text-white';
   const textColorMuted = footerConfig?.text_color === 'dark' ? 'text-gray-600' : 'text-gray-200';
@@ -92,7 +94,16 @@ export default function Footer({ className = '' }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className={`text-lg font-semibold ${textColor}`}>{tenantName}</h3>
+            {tenantIcon &&
+              <img
+                src={`/${tenantIcon}`}
+                alt="Tenant Logo"
+                className="w-24 h-24 object-contain"
+              />
+            }
+            <h3 className={`text-lg font-semibold ${textColor}`}>
+              {tenantName}
+            </h3>
             <p className={`text-sm leading-relaxed ${textColorMuted}`}>
               {tenantDescription}
             </p>

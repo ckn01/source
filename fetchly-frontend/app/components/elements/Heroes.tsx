@@ -101,7 +101,7 @@ export function Heroes({
   return (
     <div
       ref={ref}
-      className="relative w-full h-[80vh] overflow-hidden"
+      className="relative w-full h-[70vh] overflow-hidden"
     >
       <AnimatePresence>
         {isVisible && (

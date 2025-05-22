@@ -1,6 +1,8 @@
 'use client';
 
+import { Card } from '@/app/components/elements/Card';
 import { Chart } from '@/app/components/elements/Chart';
+import { Dropdown } from '@/app/components/elements/Dropdown';
 import { Heroes } from '@/app/components/elements/Heroes';
 import { PageTitle } from '@/app/components/elements/PageTitle';
 import { ScoreCard } from '@/app/components/elements/ScoreCard';
@@ -14,7 +16,8 @@ import { Section } from '@/app/components/layout/Section';
 import Menu from '@/app/components/Menu';
 import Navbar from '@/app/components/Navbar';
 import { useParams } from 'next/navigation';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
+import { CardList } from "./elements/CardList";
 
 interface LayoutProps {
   type: string;
@@ -38,7 +41,7 @@ interface RouteParams {
   [key: string]: string | string[];
 }
 
-const componentMap: { [key: string]: React.ComponentType<any> } = {
+const componentMap: Record<string, React.ComponentType<any>> = {
   webView: Container,
   webview: Container,
   container: Container,
@@ -55,6 +58,9 @@ const componentMap: { [key: string]: React.ComponentType<any> } = {
   menu: Menu,
   footer: Footer,
   pageTitle: PageTitle,
+  card: Card,
+  dropdown: Dropdown,
+  cardList: CardList,
 };
 
 interface DynamicLayoutProps {
@@ -71,6 +77,16 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
   console.log('DynamicLayout received:', layout);
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode = 'default', viewContentCode = 'default' } = params;
+  const [selectedValues, setSelectedValues] = useState<Record<string, string>>({});
+
+  const handleEvent = (event: { type: string; action: string; params: any; target: string }) => {
+    if (event.type === 'action' && event.action === 'loadTable') {
+      setSelectedValues(prev => ({
+        ...prev,
+        [event.target]: event.params.selectedValue
+      }));
+    }
+  };
 
   const renderComponent = (config: LayoutProps): ReactNode => {
     console.log('Rendering component:', config.type);
@@ -85,6 +101,40 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
       console.log('Rendering child:', child.type);
       return renderComponent({ ...child, key: `child-${index}`, viewContent });
     });
+
+    // Special handling for Dropdown component
+    if (config.type.toLowerCase() === 'dropdown') {
+      const eventListeners = config.props?.eventListeners || {};
+      const onChangeHandler = (value: string) => {
+        Object.entries(eventListeners).forEach(([eventName, eventConfig]: [string, any]) => {
+          if (eventName === 'onChange') {
+            handleEvent(eventConfig);
+          }
+        });
+      };
+
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          {...config.props}
+          onChange={onChangeHandler}
+        />
+      );
+    }
+
+    // Special handling for CardList component
+    if (config.type.toLowerCase() === 'card-list') {
+      const targetId = `${config.props.objectCode}__${config.props.viewContentCode}`;
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          {...config.props}
+          selectedValue={selectedValues[targetId]}
+        />
+      );
+    }
 
     // Special handling for Footer component
     if (config.type.toLowerCase() === 'footer') {

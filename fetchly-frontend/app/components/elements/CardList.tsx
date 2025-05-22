@@ -1,0 +1,209 @@
+import { dashboardConfig } from "@/app/appConfig";
+import { Card, CardContent } from "@/components/ui/card";
+import { toLabel } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { CheckCircle, ChevronRight, XCircle } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+interface CardListProps {
+  objectCode: string;
+  viewContentCode: string;
+  autoLoad?: boolean;
+  className?: string;
+  selectedValue?: string;
+}
+
+interface RouteParams {
+  tenantCode: string;
+  productCode: string;
+  objectCode: string;
+  viewContentCode: string;
+  [key: string]: string | string[];
+}
+
+interface Field {
+  complete_field_code: string;
+  field_code: string;
+  field_name: string;
+  data_type: string;
+  value: any;
+  display_value: any;
+  additional_data: Record<string, any>;
+}
+
+interface ApiResponse {
+  data: {
+    page: number;
+    page_size: number;
+    total_data: number;
+    total_page: number;
+    items: Record<string, Field>[];
+  };
+}
+
+export function CardList({
+  objectCode,
+  viewContentCode,
+  autoLoad = true,
+  className,
+  selectedValue
+}: CardListProps) {
+  const params = useParams<RouteParams>();
+  const { tenantCode, productCode } = params;
+  const [data, setData] = useState<ApiResponse['data'] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            page: 1,
+            page_size: 20,
+            object_code: objectCode,
+            tenant_code: tenantCode,
+            product_code: productCode,
+            view_content_code: viewContentCode,
+            filters: selectedValue ? [
+              {
+                operator: "AND",
+                filter_item: {
+                  country_serial: {
+                    value: selectedValue,
+                    operator: "equal"
+                  }
+                }
+              }
+            ] : []
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      setData(responseData.data);
+    } catch (error) {
+      console.error("CardList data fetch error:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (autoLoad || selectedValue) {
+      fetchData();
+    }
+  }, [tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-xl">
+        {error}
+      </div>
+    );
+  }
+
+  if (!data?.items?.length) {
+    return (
+      <div className="p-4 bg-gray-50 text-gray-600 rounded-xl text-center">
+        No data available
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {data.items.map((item, index) => (
+        <motion.div
+          key={item.serial?.value || index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.1 }}
+          whileHover={{ scale: 1.01 }}
+          className="group"
+        >
+          <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(item).map(([key, field]) => {
+                  // Skip metadata fields and empty fields
+                  if (
+                    !field?.display_value ||
+                    key.startsWith('__') ||
+                    ['serial', 'code', 'deleted_at'].includes(key)
+                  ) {
+                    return null;
+                  }
+
+                  // Format the field name
+                  const fieldName = field.field_name || toLabel(key);
+
+                  // Format the value based on data type
+                  let displayValue = field.display_value;
+                  if (field.data_type === 'Bool') {
+                    displayValue = field.value ? (
+                      <span className="flex items-center text-green-600">
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="flex items-center text-red-600">
+                        <XCircle className="w-4 h-4 mr-1" />
+                        No
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex flex-col space-y-1.5 p-3 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200"
+                    >
+                      <span className="text-sm font-medium text-gray-500">
+                        {fieldName}
+                      </span>
+                      <span className="text-base text-gray-900 font-medium">
+                        {displayValue}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <motion.button
+                  whileHover={{ x: 5 }}
+                  className="flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                >
+                  View Details
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </motion.button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+} 
