@@ -256,6 +256,10 @@ func (uc *viewUsecase) GetContentLayoutByKeys(ctx context.Context, request entit
 					if fieldName, ok := item["field_name"].(string); ok {
 						field.FieldName = fieldName
 					}
+					field.IsDisplayedInTable = true // set default value
+					if isDisplayedInTable, ok := item["is_displayed_in_table"].(bool); ok {
+						field.IsDisplayedInTable = isDisplayedInTable
+					}
 
 					catalogQuery.Fields[key] = field
 				}

@@ -37,6 +37,7 @@ const (
 	FieldOriginalFieldCode     = "original_field_code"
 	ForeignTable               = "foreign_table"
 	ForeignReferenceColumnName = "foreign_reference_column_name"
+	IsDisplayedInTable         = "is_displayed_in_table"
 )
 
 var (
@@ -168,8 +169,9 @@ type Order struct {
 }
 
 type Field struct {
-	FieldCode string `json:"field_code"`
-	FieldName string `json:"field_name"`
+	FieldCode          string `json:"field_code"`
+	FieldName          string `json:"field_name"`
+	IsDisplayedInTable bool   `json:"is_displayed_in_table"`
 }
 
 type CatalogQuery struct {

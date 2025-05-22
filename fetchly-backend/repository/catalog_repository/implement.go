@@ -113,14 +113,27 @@ func (r *repository) GetColumnList(ctx context.Context, request entity.CatalogQu
 					if fieldNameKey == column[entity.FieldColumnCode] {
 						isFound = true
 						column[entity.FieldColumnCode] = fieldNameKey
+						column[entity.IsDisplayedInTable] = fieldValue.IsDisplayedInTable
 
 						filteredColumns = append(filteredColumns, column)
+						break
 					}
 				}
 			} else {
 				// handle fieldName that has double underscore this indicates that it is a relationship field
 				r.handleJoinColumn(ctx, request, fieldNameKey, &joinQueryMapAll, &joinQueryOrderAll, &filteredColumns)
 				isFound = true
+
+				for _, column := range columns {
+					if fieldNameKey == column[entity.FieldColumnCode] {
+						isFound = true
+						column[entity.FieldColumnCode] = fieldNameKey
+						column[entity.IsDisplayedInTable] = fieldValue.IsDisplayedInTable
+
+						filteredColumns = append(filteredColumns, column)
+						break
+					}
+				}
 			}
 
 			if fieldValue.FieldCode != "" || fieldValue.FieldName != "" {
