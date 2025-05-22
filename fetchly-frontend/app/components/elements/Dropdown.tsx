@@ -14,6 +14,9 @@ interface DropdownProps {
   query?: Record<string, any>;
   className?: string;
   onChange?: (value: string) => void;
+  size?: 'default' | 'lg';
+  placeholder?: string;
+  options?: DropdownOption[];
 }
 
 interface RouteParams {
@@ -47,17 +50,20 @@ export function Dropdown({
   fieldValue,
   query = {},
   className,
-  onChange
+  onChange,
+  size = 'default',
+  placeholder = 'Select an option',
+  options: initialOptions
 }: DropdownProps) {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode } = params;
-  const [options, setOptions] = useState<DropdownOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [options, setOptions] = useState<DropdownOption[]>(initialOptions || []);
+  const [loading, setLoading] = useState(!initialOptions);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const fetchOptions = async (keyword: string = "") => {
+  const fetchOptions = useCallback(async (keyword: string = "") => {
     setLoading(true);
     setError(null);
 
@@ -78,7 +84,15 @@ export function Dropdown({
               [fieldName]: { field_code: fieldName },
               [fieldValue]: { field_code: fieldValue }
             },
-            query: {},
+            filters: keyword ? [{
+              "operator": "AND",
+              "filter_item": {
+                [fieldName]: {
+                  "value": keyword,
+                  "operator": "contains"
+                }
+              }
+            }] : [],
             object_code: objectCode,
             tenant_code: tenantCode,
             product_code: productCode,
@@ -120,7 +134,7 @@ export function Dropdown({
       setLoading(false);
       setIsSearching(false);
     }
-  };
+  }, [tenantCode, productCode, objectCode, viewContentCode, fieldName, fieldValue, query]);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -128,7 +142,7 @@ export function Dropdown({
       setIsSearching(true);
       fetchOptions(keyword);
     }, 500),
-    [tenantCode, productCode, objectCode, viewContentCode, fieldName, fieldValue, query]
+    [fetchOptions]
   );
 
   // Handle search input change
@@ -139,34 +153,40 @@ export function Dropdown({
   };
 
   useEffect(() => {
-    fetchOptions();
-  }, [tenantCode, productCode, objectCode, viewContentCode, fieldName, fieldValue, query]);
+    if (!initialOptions) {
+      fetchOptions();
+    }
+  }, []);
 
   return (
     <div className="space-y-2">
-      <Select onValueChange={onChange}>
-        <SelectTrigger className={className}>
-          <SelectValue placeholder="Select an option" />
+      <Select onValueChange={onChange} value={fieldValue}>
+        <SelectTrigger className={`${className} ${size === 'lg' ? 'h-12 text-lg' : ''}`}>
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <div className="flex items-center px-3 pb-2">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <Search className={`mr-2 shrink-0 opacity-50 ${size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'}`} />
             <Input
               placeholder="Search..."
               value={searchKeyword}
               onChange={handleSearchChange}
-              className="h-8"
+              className={`${size === 'lg' ? 'h-10 text-lg' : 'h-8'}`}
             />
           </div>
           {loading || isSearching ? (
-            <SelectItem value="loading" disabled>Loading...</SelectItem>
+            <SelectItem value="loading" disabled className={size === 'lg' ? 'text-lg py-3' : ''}>Loading...</SelectItem>
           ) : error ? (
-            <SelectItem value="error" disabled>Error: {error}</SelectItem>
+            <SelectItem value="error" disabled className={size === 'lg' ? 'text-lg py-3' : ''}>Error: {error}</SelectItem>
           ) : options.length === 0 ? (
-            <SelectItem value="no-options" disabled>No options available</SelectItem>
+            <SelectItem value="no-options" disabled className={size === 'lg' ? 'text-lg py-3' : ''}>No options available</SelectItem>
           ) : (
             options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                className={size === 'lg' ? 'text-lg py-3' : ''}
+              >
                 {option.label}
               </SelectItem>
             ))
