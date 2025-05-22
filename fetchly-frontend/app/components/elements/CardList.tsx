@@ -43,6 +43,20 @@ interface ApiResponse {
   };
 }
 
+interface LayoutConfig {
+  layout: {
+    type: string;
+    props?: any;
+    children?: any[];
+  };
+  viewContent: {
+    name: string;
+    object?: {
+      display_name?: string;
+    };
+  };
+}
+
 export function CardList({
   objectCode,
   viewContentCode,
@@ -56,6 +70,31 @@ export function CardList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
+
+  const fetchLayoutConfig = async () => {
+    try {
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/record`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch layout config: ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      setLayoutConfig(responseData.data);
+    } catch (error) {
+      console.error("CardList layout config fetch error:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch layout config");
+    }
+  };
 
   const fetchData = async (filters: any[] = [], page: number = 1) => {
     try {
@@ -95,8 +134,14 @@ export function CardList({
     }
   };
 
+  // Fetch layout config first
   useEffect(() => {
-    if (autoLoad || selectedValue) {
+    fetchLayoutConfig();
+  }, [tenantCode, productCode, objectCode, viewContentCode]);
+
+  // Fetch data after layout config is loaded
+  useEffect(() => {
+    if (layoutConfig && (autoLoad || selectedValue)) {
       fetchData(selectedValue ? [
         {
           operator: "AND",
@@ -109,7 +154,7 @@ export function CardList({
         }
       ] : [], currentPage);
     }
-  }, [tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue, currentPage]);
+  }, [layoutConfig, tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue, currentPage]);
 
   // Add event listener for table data load
   useEffect(() => {
