@@ -1,7 +1,7 @@
 import { dashboardConfig } from "@/app/appConfig";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { CheckCircle, ChevronRight, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReactPaginate from 'react-paginate';
@@ -170,18 +170,13 @@ export function CardList({
     const handleTableDataLoad = (event: CustomEvent) => {
       if (event.detail.target === className) {
         const { params, config } = event.detail;
-        const newFilters = [{
-          operator: "AND",
-          filter_item: {
-            [params.field]: {
-              value: params.value,
-              operator: "equal"
-            }
-          }
-        }];
+
+        // Handle the new combined filters format
+        const newFilters = params.filters || [];
 
         setCurrentFilters(newFilters);  // Store the filters
         setCurrentPage(1); // Reset to first page when filter changes
+        fetchLayoutConfig();
         fetchData(newFilters, 1);
       }
     };
@@ -202,12 +197,12 @@ export function CardList({
     if (!layoutConfig?.fields) return null;
 
     return layoutConfig.fields
-      .filter(field => field.is_displayed_in_table)
+      .filter(field => field.is_displayed_in_table !== false)
       .sort((a, b) => a.field_order - b.field_order)
       .map(field => {
         const fieldCode = field.field_code.split('.')[0];
         const itemField = item[fieldCode];
-        if (!itemField?.display_value) return null;
+        // if (!itemField?.display_value) return null;
 
         // Handle custom render config if available
         let displayValue = itemField.display_value;
@@ -300,7 +295,7 @@ export function CardList({
                 `}>
                   {renderCardContent(item)}
                 </div>
-                <div className="mt-3 flex justify-end">
+                {/* <div className="mt-3 flex justify-end">
                   <motion.button
                     whileHover={{ x: 5 }}
                     className="flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
@@ -308,7 +303,7 @@ export function CardList({
                     View Details
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </motion.button>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </motion.div>

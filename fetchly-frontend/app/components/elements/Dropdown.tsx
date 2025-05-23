@@ -6,6 +6,20 @@ import { Search } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+// Extend Window interface to include fetchlyFilters
+declare global {
+  interface Window {
+    fetchlyFilters?: {
+      [target: string]: {
+        [field: string]: {
+          value: string;
+          operator: string;
+        };
+      };
+    };
+  }
+}
+
 interface DropdownProps {
   objectCode: string;
   viewContentCode: string;
@@ -189,11 +203,11 @@ export function Dropdown({
     };
   }, [debouncedSearch]);
 
-  const handleValueChange = async (value: string) => {
-    setSelectedValue(value);
+  const handleValueChange = async (value: string | null) => {
+    setSelectedValue(value || "");
 
     if (onChange) {
-      onChange(value);
+      onChange(value || "");
     }
 
     if (eventListeners?.onChange) {
@@ -201,13 +215,42 @@ export function Dropdown({
 
       if (action === 'loadTable') {
         try {
+          // Store this dropdown's filter state globally
+          if (!window.fetchlyFilters) {
+            window.fetchlyFilters = {};
+          }
+
+          if (!window.fetchlyFilters[target]) {
+            window.fetchlyFilters[target] = {};
+          }
+
+          // Update this dropdown's filter
+          if (value && value.trim()) {
+            window.fetchlyFilters[target][params.field] = {
+              value: value,
+              operator: "equal"
+            };
+          } else {
+            // Remove filter if value is empty/null
+            delete window.fetchlyFilters[target][params.field];
+          }
+
+          // Collect all filters for this target
+          const allFilters = window.fetchlyFilters[target];
+          const hasFilters = Object.keys(allFilters).length > 0;
+
+          // Create combined filter object
+          const combinedFilters = hasFilters ? [{
+            operator: "AND",
+            filter_item: allFilters
+          }] : [];
+
           // Create and dispatch a custom event that can be caught by any component
           const event = new CustomEvent('fetchly:tableDataLoad', {
             detail: {
               target,
               params: {
-                field: params.field,
-                value: value
+                filters: combinedFilters
               },
               config: {
                 objectCode: target.split('__')[1],
@@ -222,12 +265,10 @@ export function Dropdown({
 
           // Dispatch to window so any component can listen for it
           window.dispatchEvent(event);
-          console.log('Table load event dispatched:', {
+          console.log('Combined table load event dispatched:', {
             target,
-            params: {
-              field: params.field,
-              value: value
-            }
+            filters: combinedFilters,
+            allStoredFilters: window.fetchlyFilters[target]
           });
         } catch (error) {
           console.error("Failed to trigger table data load:", error);
@@ -242,13 +283,63 @@ export function Dropdown({
       console.log('Initial options load');
       fetchOptions();
     }
+
+    // Reset global filters when component mounts
+    if (eventListeners?.onChange) {
+      const { target, params } = eventListeners.onChange;
+      if (window.fetchlyFilters && window.fetchlyFilters[target]) {
+        delete window.fetchlyFilters[target][params.field];
+      }
+    }
+
+    // Cleanup function to reset filters when component unmounts
+    return () => {
+      if (eventListeners?.onChange) {
+        const { target, params } = eventListeners.onChange;
+        if (window.fetchlyFilters && window.fetchlyFilters[target]) {
+          delete window.fetchlyFilters[target][params.field];
+
+          // If no more filters for this target, remove the target entry
+          if (Object.keys(window.fetchlyFilters[target]).length === 0) {
+            delete window.fetchlyFilters[target];
+          }
+        }
+      }
+    };
   }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 mb-4">
       <Select onValueChange={handleValueChange} value={selectedValue}>
-        <SelectTrigger className={`${className} ${size === 'lg' ? 'h-12 text-lg' : ''}`}>
+        <SelectTrigger className={`${className} ${size === 'lg' ? 'h-12 text-lg' : ''} relative`}>
           <SelectValue placeholder={placeholder} />
+          {selectedValue && (
+            <button
+              type="button"
+              className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleValueChange("");
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          )}
         </SelectTrigger>
         <SelectContent>
           <div className="flex items-center px-3 pb-2">

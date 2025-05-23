@@ -755,7 +755,12 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 		}
 		// Combine the group clauses with the group operator (AND/OR)
 		if len(groupClauses) > 0 {
-			operatorValue, _ := filterGroup.Operator.AsT2()
+			operatorValue, ok := filterGroup.Operator.AsT2()
+
+			// Fallback to "AND" if operator is not set or empty
+			if !ok || operatorValue == "" {
+				operatorValue = "AND"
+			}
 
 			clause := fmt.Sprintf("(%s)", strings.Join(groupClauses, fmt.Sprintf(" %s ", operatorValue)))
 			filterClauses = append(filterClauses, clause)
