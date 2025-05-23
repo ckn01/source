@@ -36,10 +36,16 @@ func HandleSingleRow(columnsList []map[string]any, rows *sql.Rows, request entit
 		// check if val is json
 		isJson := IsJSON(val)
 		if isJson {
-			var jsonData map[string]any
-
-			if err := json.Unmarshal([]byte(val.([]uint8)), &jsonData); err == nil {
-				val = jsonData
+			// Try to unmarshal as array of maps first
+			var jsonArray []map[string]any
+			if err := json.Unmarshal([]byte(val.([]uint8)), &jsonArray); err == nil {
+				val = jsonArray
+			} else {
+				// If not an array, try as single map
+				var jsonData map[string]any
+				if err := json.Unmarshal([]byte(val.([]uint8)), &jsonData); err == nil {
+					val = jsonData
+				}
 			}
 		}
 

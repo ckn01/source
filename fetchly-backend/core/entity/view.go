@@ -21,16 +21,17 @@ type ViewLayout struct {
 }
 
 type ViewSchema struct {
-	Serial        string         `json:"serial"`
-	Code          string         `json:"code"`
-	Name          string         `json:"name"`
-	Query         map[string]any `json:"query"`
-	DisplayField  map[string]any `json:"display_field"`
-	StructureType string         `json:"structure_type"`
-	ActionSerial  string         `json:"action_serial"`
-	IsFavorite    bool           `json:"is_favorite"`
-	ObjectSerial  string         `json:"object_serial"`
-	FieldSections map[string]any `json:"field_sections"`
+	Serial        string           `json:"serial"`
+	Code          string           `json:"code"`
+	Name          string           `json:"name"`
+	Query         map[string]any   `json:"query"`
+	DisplayField  map[string]any   `json:"display_field"`
+	StructureType string           `json:"structure_type"`
+	ActionSerial  string           `json:"action_serial"`
+	IsFavorite    bool             `json:"is_favorite"`
+	ObjectSerial  string           `json:"object_serial"`
+	FieldSections map[string]any   `json:"field_sections"`
+	Orders        []map[string]any `json:"orders"`
 }
 
 type ViewContentResponse struct {

@@ -263,6 +263,28 @@ func (uc *catalogUsecase) GetObjectData(ctx context.Context, request entity.Cata
 
 	request.Fields = combinedQuery.Fields
 
+	// implement order by using view schema order and request order
+	if len(viewSchemaRecord.Orders) > 0 {
+		for _, order := range viewSchemaRecord.Orders {
+			// convert order to entity.Order
+			orderItem := entity.Order{}
+			if fieldCode, ok := order["field_name"].(string); ok {
+				orderItem.FieldName = fieldCode
+			}
+			if direction, ok := order["direction"].(string); ok {
+				orderItem.Direction = direction
+			}
+
+			combinedQuery.Orders = append(combinedQuery.Orders, orderItem)
+		}
+	}
+
+	if len(request.Orders) > 0 {
+		combinedQuery.Orders = append(combinedQuery.Orders, request.Orders...)
+	}
+
+	request.Orders = combinedQuery.Orders
+
 	results, err := uc.catalogRepo.GetObjectData(ctx, request)
 	if err != nil {
 		return resp, err

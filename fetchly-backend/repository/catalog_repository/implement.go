@@ -771,13 +771,58 @@ func (r *repository) buildFilters(_ context.Context, request entity.CatalogQuery
 }
 
 // Helper function to build dynamic order by clauses
-func buildOrderBy(request entity.CatalogQuery) string {
+func buildOrderBy(request entity.CatalogQuery, columnsList []map[string]any) (string, map[string]string, []string) {
 	var orderClauses []string
+	joinQueryMap := make(map[string]string)
+	joinQueryOrder := make([]string, 0)
+
 	for _, order := range request.Orders {
-		fieldName := fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, order.FieldName)
+		fieldName := order.FieldName
+		// Handle chained fields (e.g., education_grade_id__grade_order)
+		if strings.Contains(fieldName, "__") {
+			parts := strings.Split(fieldName, "__")
+			// Find the foreign table name from columnsList
+			var foreignTableName string
+			for _, col := range columnsList {
+				if col[entity.FieldColumnCode].(string) == parts[0] {
+					if foreignTable, ok := col[entity.FieldForeignTableName]; ok {
+						foreignTableName = foreignTable.(string)
+					}
+					break
+				}
+			}
+
+			if foreignTableName != "" {
+				// Create a unique alias for this join
+				joinAlias := fmt.Sprintf("order_%s_%s", parts[0], parts[1])
+				foreignTableFullName := fmt.Sprintf("%v.%v", request.TenantCode, foreignTableName)
+				mainTableName := fmt.Sprintf("%v.%v", request.TenantCode, request.ObjectCode)
+
+				// Create join clause
+				joinClause := fmt.Sprintf("LEFT JOIN %v as %v ON %v.%v = %v.%v",
+					foreignTableFullName,
+					joinAlias,
+					joinAlias,
+					"serial",
+					mainTableName,
+					parts[0])
+
+				// Add to join maps if not exists
+				if _, exists := joinQueryMap[joinAlias]; !exists {
+					joinQueryMap[joinAlias] = joinClause
+					joinQueryOrder = append(joinQueryOrder, joinAlias)
+				}
+
+				fieldName = fmt.Sprintf("%v.%v", joinAlias, parts[1])
+			} else {
+				fieldName = fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, fieldName)
+			}
+		} else {
+			fieldName = fmt.Sprintf("%v.%v.%v", request.TenantCode, request.ObjectCode, fieldName)
+		}
 		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", fieldName, order.Direction))
 	}
-	return strings.Join(orderClauses, ", ")
+	return strings.Join(orderClauses, ", "), joinQueryMap, joinQueryOrder
 }
 
 func (r *repository) getSingleData(ctx context.Context, columnList []map[string]interface{}, columnsString, tableName string, request entity.CatalogQuery, joinQueryMap map[string]string, joinQueryOrder []string) string {
@@ -872,10 +917,13 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 	// Start building the base query
 	query := fmt.Sprintf(`SELECT %v FROM %v`, columnsString, tableName)
 
-	// handle join table if any
+	// Collect all join clauses
+	var allJoins []string
+
+	// Add existing joins
 	for _, joinKey := range joinQueryOrder {
 		if !strings.Contains(query, joinQueryMap[joinKey]) {
-			query = fmt.Sprintf("%s %s", query, joinQueryMap[joinKey])
+			allJoins = append(allJoins, joinQueryMap[joinKey])
 		}
 	}
 
@@ -883,8 +931,14 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 	for _, filterGroup := range request.Filters {
 		for fieldName, filter := range filterGroup.Filters {
 			if strings.Contains(fieldName, "__") {
-				queryResult, _ := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
+				queryResult, joinMap := r.HandleChainingJoinQuery(ctx, query, fieldName, tableName, request, filter)
 				query = queryResult
+				// Add any new joins from filter
+				for _, joinClause := range joinMap {
+					if !strings.Contains(query, joinClause) {
+						allJoins = append(allJoins, joinClause)
+					}
+				}
 			}
 		}
 	}
@@ -898,24 +952,43 @@ func (r *repository) getDataWithPagination(ctx context.Context, columnsString, t
 		}
 	}
 
+	// Build WHERE clause
+	whereClause := "WHERE TRUE"
 	if hasDeletedAt {
-		query = query + fmt.Sprintf(" WHERE %v.deleted_at IS NULL", tableName)
-	} else {
-		query = query + " WHERE TRUE"
+		whereClause = fmt.Sprintf("WHERE %v.deleted_at IS NULL", tableName)
 	}
 
 	// Apply dynamic filters if they exist
 	if len(request.Filters) > 0 {
 		filterString := r.buildFilters(ctx, request)
-
 		if len(filterString) > 0 {
-			query = query + " AND " + filterString
+			whereClause = whereClause + " AND " + filterString
 		}
 	}
 
 	// Apply dynamic order by if they exist
 	if len(request.Orders) > 0 {
-		query = query + " ORDER BY " + buildOrderBy(request)
+		orderString, orderJoinMap, orderJoinOrder := buildOrderBy(request, columnList)
+
+		// Add any new joins from order by
+		for _, joinKey := range orderJoinOrder {
+			if !strings.Contains(query, orderJoinMap[joinKey]) {
+				allJoins = append(allJoins, orderJoinMap[joinKey])
+			}
+		}
+
+		// Combine all parts of the query
+		query = fmt.Sprintf("%s %s %s ORDER BY %s",
+			query,
+			strings.Join(allJoins, " "),
+			whereClause,
+			orderString)
+	} else {
+		// If no order by, just combine the parts without ORDER BY
+		query = fmt.Sprintf("%s %s %s",
+			query,
+			strings.Join(allJoins, " "),
+			whereClause)
 	}
 
 	// Apply pagination (LIMIT and OFFSET)

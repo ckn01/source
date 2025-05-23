@@ -632,6 +632,32 @@ func mapToStructSnakeCase(data map[string]entity.DataItem, target any) error {
 				continue
 			}
 
+			// Handle []map[string]interface{}
+			if value.Kind() == reflect.Slice && value.Type().Elem().Kind() == reflect.Map {
+				// If target field is a slice of structs, recursively map values
+				if targetField.Kind() == reflect.Slice && targetField.Type().Elem().Kind() == reflect.Struct {
+					sliceLen := value.Len()
+					newSlice := reflect.MakeSlice(targetField.Type(), sliceLen, sliceLen)
+
+					for j := 0; j < sliceLen; j++ {
+						mapValue := value.Index(j).Interface().(map[string]any)
+						newStruct := reflect.New(targetField.Type().Elem()).Interface()
+						if err := mapToStructSnakeCase(convertToDataItemMap(mapValue), newStruct); err == nil {
+							newSlice.Index(j).Set(reflect.ValueOf(newStruct).Elem())
+						}
+					}
+
+					targetField.Set(newSlice)
+					continue
+				}
+
+				// If target field is []map[string]interface{}, set it directly
+				if targetField.Type().AssignableTo(reflect.TypeOf([]map[string]any{})) {
+					targetField.Set(value)
+					continue
+				}
+			}
+
 			// Handle map[string]interface{}
 			if value.Kind() == reflect.Map {
 				// If target field is a struct, recursively map values
