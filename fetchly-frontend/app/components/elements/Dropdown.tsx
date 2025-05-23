@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import debounce from "lodash/debounce";
 import { Search } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface DropdownProps {
   objectCode: string;
@@ -77,13 +77,15 @@ export function Dropdown({
   const [selectedValue, setSelectedValue] = useState<string>(fieldValue || "");
 
   const fetchOptions = useCallback(async (keyword: string = "") => {
-    setLoading(true);
-    setError(null);
+    if (!fieldName || !fieldValue) {
+      setError("fieldName and fieldValue are required");
+      setLoading(false);
+      return;
+    }
 
     try {
-      if (!fieldName || !fieldValue) {
-        throw new Error("fieldName and fieldValue are required");
-      }
+      setLoading(true);
+      setError(null);
 
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
@@ -149,21 +151,43 @@ export function Dropdown({
     }
   }, [tenantCode, productCode, objectCode, viewContentCode, fieldName, fieldValue, query]);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((keyword: string) => {
+  // Create a simple debounced search function
+  const debouncedSearch = useMemo(() => {
+    return debounce((keyword: string) => {
+      console.log('Debounced search executing with:', keyword);
       setIsSearching(true);
-      fetchOptions(keyword);
-    }, 500),
-    [fetchOptions]
-  );
+
+      // Call fetchOptions directly without async/await in debounce
+      fetchOptions(keyword).finally(() => {
+        setIsSearching(false);
+      });
+    }, 500);
+  }, []);
 
   // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const keyword = e.target.value;
+    console.log('Search input changed:', keyword);
     setSearchKeyword(keyword);
-    debouncedSearch(keyword);
-  };
+
+    if (keyword.trim()) {
+      console.log('Calling debounced search with:', keyword);
+      debouncedSearch(keyword);
+    } else {
+      console.log('Search cleared, loading initial options');
+      // If search is cleared, cancel pending search and reset to initial options
+      debouncedSearch.cancel();
+      fetchOptions();
+    }
+  }, [debouncedSearch]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      console.log('Cleaning up debounced search');
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleValueChange = async (value: string) => {
     setSelectedValue(value);
@@ -212,8 +236,10 @@ export function Dropdown({
     }
   };
 
+  // Initial load of options
   useEffect(() => {
     if (!initialOptions) {
+      console.log('Initial options load');
       fetchOptions();
     }
   }, []);
@@ -232,6 +258,10 @@ export function Dropdown({
               value={searchKeyword}
               onChange={handleSearchChange}
               className={`${size === 'lg' ? 'h-10 text-lg' : 'h-8'}`}
+              onKeyDown={(e) => {
+                // Prevent the dropdown from closing when typing
+                e.stopPropagation();
+              }}
             />
           </div>
           {loading || isSearching ? (

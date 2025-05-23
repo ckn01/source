@@ -124,12 +124,13 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
     }
 
     // Special handling for CardList component
-    if (config.type.toLowerCase() === 'card-list') {
+    if (config.type.toLowerCase() === 'card-list' || config.type.toLowerCase() === 'cardlist') {
       const targetId = `${config.props.objectCode}__${config.props.viewContentCode}`;
+      const className = config.class_name || (config as any).className;
       return (
         <ComponentType
           key={config.props?.key}
-          className={config.class_name}
+          className={className}
           {...config.props}
           selectedValue={selectedValues[targetId]}
         />

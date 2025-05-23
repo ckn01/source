@@ -80,6 +80,7 @@ export function CardList({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig | null>(null);
+  const [currentFilters, setCurrentFilters] = useState<any[]>([]);
 
   const fetchLayoutConfig = async () => {
     try {
@@ -116,6 +117,16 @@ export function CardList({
       setLoading(true);
       setError(null);
 
+      const requestBody = {
+        page,
+        page_size: 20,
+        object_code: objectCode,
+        tenant_code: tenantCode,
+        product_code: productCode,
+        view_content_code: viewContentCode,
+        filters
+      };
+
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data`,
         {
@@ -123,15 +134,7 @@ export function CardList({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            page,
-            page_size: 20,
-            object_code: objectCode,
-            tenant_code: tenantCode,
-            product_code: productCode,
-            view_content_code: viewContentCode,
-            filters
-          })
+          body: JSON.stringify(requestBody)
         }
       );
 
@@ -156,36 +159,30 @@ export function CardList({
 
   // Fetch data after layout config is loaded
   useEffect(() => {
-    if (layoutConfig && (autoLoad || selectedValue)) {
-      fetchData(selectedValue ? [
-        {
-          operator: "AND",
-          filter_item: {
-            country_serial: {
-              value: selectedValue,
-              operator: "equal"
-            }
-          }
-        }
-      ] : [], currentPage);
+    if (layoutConfig && autoLoad && currentFilters.length === 0) {
+      // Only auto-load if no filters are set (initial load)
+      fetchData([], 1); // Always start from page 1 on initial load
     }
-  }, [layoutConfig, tenantCode, productCode, objectCode, viewContentCode, autoLoad, selectedValue, currentPage]);
+  }, [layoutConfig, tenantCode, productCode, objectCode, viewContentCode, autoLoad]);
 
   // Add event listener for table data load
   useEffect(() => {
     const handleTableDataLoad = (event: CustomEvent) => {
       if (event.detail.target === className) {
         const { params, config } = event.detail;
-        setCurrentPage(1); // Reset to first page when filter changes
-        fetchData([{
+        const newFilters = [{
           operator: "AND",
           filter_item: {
             [params.field]: {
               value: params.value,
-              operator: "equals"
+              operator: "equal"
             }
           }
-        }], 1);
+        }];
+
+        setCurrentFilters(newFilters);  // Store the filters
+        setCurrentPage(1); // Reset to first page when filter changes
+        fetchData(newFilters, 1);
       }
     };
 
@@ -198,6 +195,7 @@ export function CardList({
   const handlePageChange = (selectedItem: { selected: number }) => {
     const newPage = selectedItem.selected + 1;
     setCurrentPage(newPage);
+    fetchData(currentFilters, newPage);  // Use stored filters when changing pages
   };
 
   const renderCardContent = (item: Record<string, Field>) => {
