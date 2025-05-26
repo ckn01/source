@@ -1,6 +1,7 @@
 "use client";
 
 import { dashboardConfig } from "@/app/appConfig";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -95,10 +96,12 @@ export default function Footer({ className = '' }: FooterProps) {
           {/* Company Info */}
           <div className="space-y-4">
             {tenantIcon &&
-              <img
+              <Image
                 src={`/${tenantIcon}`}
                 alt="Tenant Logo"
-                className="w-24 h-24 object-contain"
+                width={96}
+                height={96}
+                className="object-contain"
               />
             }
             <h3 className={`text-lg font-semibold ${textColor}`}>

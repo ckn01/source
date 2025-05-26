@@ -1,3 +1,4 @@
+/* eslint-disable react/no-children-prop */
 'use client';
 
 import { Card } from '@/app/components/elements/Card';
@@ -99,7 +100,11 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
 
     const childElements = config.children?.map((child, index) => {
       console.log('Rendering child:', child.type);
-      return renderComponent({ ...child, key: `child-${index}`, viewContent });
+      return renderComponent({
+        ...child,
+        key: child.key || `child-${index}-${child.type}`,
+        viewContent
+      });
     });
 
     // Special handling for Dropdown component
@@ -191,6 +196,7 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
 
     // Special handling for Heroes component
     if (config.type.toLowerCase() === 'heroes') {
+      const { children, ...otherProps } = config.props || {};
       return (
         <ComponentType
           key={config.props?.key}

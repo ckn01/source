@@ -102,6 +102,7 @@ export function Heroes({
     <div
       ref={ref}
       className="relative w-full h-[70vh] overflow-hidden"
+      style={{ position: 'relative' }}
     >
       <AnimatePresence>
         {isVisible && (
@@ -113,6 +114,7 @@ export function Heroes({
               y: effect === 'parallax' ? backgroundY : 0,
               backgroundImage: `url(${currentHeroItem?.props?.backgroundImage || backgroundImage})`,
               opacity: effect === 'parallax' ? opacity : 1,
+              position: 'absolute',
               ...style
             }}
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"

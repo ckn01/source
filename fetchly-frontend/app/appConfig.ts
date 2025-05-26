@@ -1,18 +1,14 @@
 // appConfig.ts
 export const dashboardConfig = {
-  title: "Fetchly",
-  // backendAPIURL: "https://backend.fetchly.web.id",
-  backendAPIURL: "http://localhost:8080",
-  defaultTenantCode: "fetchly_delivery",
-  defaultProductCode: "delivery",
+  title: "SPLN",
+  backendAPIURL: "https://backend.fetchly.web.id",
+  defaultTenantCode: "kemendikdasmen",
+  defaultProductCode: "spln_landing_page",
   defaultObjectCode: "default",
   defaultViewContentCode: "default",
   isDebugMode: false
 };
 
 export const APIMethod = {
-  "POST": "POST",
-  "PUT": "PUT",
-  "PATCH": "PATCH",
-  "DELETE": "DELETE"
+  POST: "POST"
 }

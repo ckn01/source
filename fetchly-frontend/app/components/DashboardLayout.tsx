@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { openDB } from 'idb';
 import * as Icons from "lucide-react";
 import { ChevronDown, ChevronLeft, ChevronRight, LucideProps } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
@@ -357,10 +358,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   {tenantIcon && (
-                    <img
+                    <Image
                       src={tenantIcon}
                       alt="Tenant Logo"
-                      className="w-9 h-9 object-contain"
+                      width={18}
+                      height={18}
+                      className="object-contain"
                     />
                   )}
                   <div className="flex flex-col">
