@@ -1,9 +1,10 @@
 "use client";
 
 import { dashboardConfig } from "@/app/appConfig";
+import DynamicDetail from "@/app/components/ui/DynamicDetail";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
-import { ArrowLeftCircle } from "lucide-react";
+import { ArrowLeftCircle, Pencil } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
@@ -38,7 +39,7 @@ type ViewChild = {
   };
 };
 
-export default function DynamicPageEdit() {
+export default function DynamicPageDetail() {
   const params = useParams<RouteParams>();
   const { tenantCode, productCode, objectCode, viewContentCode, dataSerial } = params;
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function DynamicPageEdit() {
   const [isAPIResponseAccordionOpen, setIsAPIResponseAccordionOpen] = useState(false);
   const [isAPIResponseDataAccordionOpen, setIsAPIResponseDataAccordionOpen] = useState(false);
   const [isDynamicParamAccordionOpen, setIsDynamicParamAccordionOpen] = useState(false);
-
+  const [buttonColors, setButtonColors] = useState({ primary: '#3b82f6', textColor: 'light' });
 
   const [filters, setFilters] = useState<{
     operator: string;
@@ -68,12 +69,13 @@ export default function DynamicPageEdit() {
     },
   ]);
 
-  const currentFields = Object.keys(filters[0].filter_item); const [currentPage, setCurrentPage] = useState<number>(1);
+  const currentFields = Object.keys(filters[0].filter_item);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const fetchLayout = async () => {
     try {
       const response = await fetch(
-        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/form`,
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/detail`,
         {
           method: "POST",
           headers: {
@@ -93,6 +95,11 @@ export default function DynamicPageEdit() {
       setResponseLayout(layoutData);
       setViewContent(layoutData.view_content);
       setViewLayout(layoutData.layout);
+
+      // Set button colors from layout data
+      if (layoutData.view_content?.button_colors) {
+        setButtonColors(layoutData.view_content.button_colors);
+      }
 
       // iterate through layout children to find fields
       const fields = layoutData.fields || [];
@@ -179,25 +186,50 @@ export default function DynamicPageEdit() {
   return (
     <div className="flex flex-col items-left justify-left min-h-screen bg-gray-100">
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.history.back()}
+              className="py-1 px-2 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded-md border border-gray-100 gap-2 flex items-center transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+              style={{
+                cursor: 'pointer'
+              }}
+            >
+              <ArrowLeftCircle size={18} />
+            </button>
+            <h1 className="text-2xl font-bold text-cyan-600">
+              {viewContent?.object?.display_name
+                ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})`
+                : toLabel(objectCode)} Detail
+            </h1>
+          </div>
           <button
-            onClick={() => window.history.back()}
-            className="py-1 px-2 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded-md border border-gray-100 gap-2 flex items-center transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+            onClick={() => window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/edit/${dataSerial}`}
+            className="py-2 px-4 rounded-md gap-2 flex items-center transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+            style={{
+              backgroundColor: buttonColors.primary,
+              color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff',
+              cursor: 'pointer'
+            }}
           >
-            <ArrowLeftCircle size={18} />
+            <Pencil size={18} />
+            Edit
           </button>
-          <h1 className="text-2xl font-bold text-cyan-600">
-            Detail {viewContent?.object?.display_name
-              ? `${viewContent?.object?.display_name} (${toLabel(viewContentCode)})`
-              : toLabel(objectCode)}
-          </h1>
         </div>
 
         <div className="space-y-4">
           {viewLayout?.children.map((child: ViewChild, index: number) => {
             if (child.type === "detail") {
               return (
-                <>Detail Here</>
+                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)]">
+                  <CardContent className="p-6">
+                    <DynamicDetail
+                      viewComponent={child}
+                      viewLayout={viewLayout}
+                      responseData={responseData}
+                    />
+                  </CardContent>
+                </Card>
               );
             }
             return null;
@@ -207,7 +239,6 @@ export default function DynamicPageEdit() {
         {dashboardConfig.isDebugMode &&
           <Card className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-4 mt-4">
             <CardContent className="p-4 pb-0 overflow-x-auto">
-
               <div className="mt-4">
                 <button
                   onClick={() => setIsDynamicParamAccordionOpen(!isDynamicParamAccordionOpen)}
@@ -267,6 +298,7 @@ export default function DynamicPageEdit() {
                   </SyntaxHighlighter>
                 )}
               </div>
+
               <div className="mt-4">
                 <button
                   onClick={() => setIsAPIResponseDataAccordionOpen(!isAPIResponseDataAccordionOpen)}
@@ -296,7 +328,6 @@ export default function DynamicPageEdit() {
             </CardContent>
           </Card>
         }
-
       </div>
     </div>
   );

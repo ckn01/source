@@ -1,9 +1,10 @@
 // appConfig.ts
 export const dashboardConfig = {
   title: "SPLN",
-  backendAPIURL: "https://backend.fetchly.web.id",
+  backendAPIURL: "http://localhost:8080",
+  // backendAPIURL: "https://backend.fetchly.web.id",
   defaultTenantCode: "kemendikdasmen",
-  defaultProductCode: "spln_landing_page",
+  defaultProductCode: "spln",
   defaultObjectCode: "default",
   defaultViewContentCode: "default",
   isDebugMode: false
