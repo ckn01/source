@@ -361,8 +361,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <Image
                       src={tenantIcon}
                       alt="Tenant Logo"
-                      width={18}
-                      height={18}
+                      width={32}
+                      height={32}
                       className="object-contain"
                     />
                   )}
