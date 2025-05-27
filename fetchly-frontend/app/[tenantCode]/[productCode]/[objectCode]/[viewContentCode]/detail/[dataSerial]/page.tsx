@@ -1,12 +1,15 @@
 "use client";
 
 import { dashboardConfig } from "@/app/appConfig";
+import { DynamicTable } from "@/app/components/elements/DynamicTable";
 import DynamicDetail from "@/app/components/ui/DynamicDetail";
+import LoadingOverlay from "@/app/components/ui/LoadingOverlay";
 import { Card, CardContent } from "@/components/ui/card";
 import { toLabel } from "@/lib/utils";
 import { ArrowLeftCircle, Pencil } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import ReactPaginate from "react-paginate";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -36,6 +39,12 @@ type ViewChild = {
   props?: {
     fields?: any[];
     is_displaying_metadata_column?: boolean;
+    objectCode?: string;
+    viewContentCode?: string;
+    filters?: any[];
+    fixHeight?: string;
+    maxHeight?: string;
+    title?: string;
   };
 };
 
@@ -72,8 +81,20 @@ export default function DynamicPageDetail() {
   const currentFields = Object.keys(filters[0].filter_item);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const [isLayoutLoading, setIsLayoutLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  const [tableFilters, setTableFilters] = useState<any[]>([]);
+
+  const [actionButtonOpen, setActionButtonOpen] = useState<boolean[]>([]);
+
+  const [tableData, setTableData] = useState<any>(null);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [tablePage, setTablePage] = useState(1);
+
   const fetchLayout = async () => {
     try {
+      setIsLayoutLoading(true);
       const response = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/detail`,
         {
@@ -95,6 +116,12 @@ export default function DynamicPageDetail() {
       setResponseLayout(layoutData);
       setViewContent(layoutData.view_content);
       setViewLayout(layoutData.layout);
+
+      // Process table filters from layout
+      const tableComponent = layoutData.layout?.children?.find((child: any) => child.type === "table");
+      if (tableComponent) {
+        await fetchTableData(tableComponent);
+      }
 
       // Set button colors from layout data
       if (layoutData.view_content?.button_colors) {
@@ -125,15 +152,17 @@ export default function DynamicPageDetail() {
 
       // Setelah layout selesai, baru fetch data
       await fetchData(layoutData, currentPage);
+      setIsLayoutLoading(false);
     } catch (error) {
       console.error("Layout API error:", error);
       setResponseLayout({ error: (error as Error).message });
+      setIsLayoutLoading(false);
     }
   };
 
   const fetchData = async (layoutData: any, page: number) => {
     try {
-      setIsLoading(true)
+      setIsDataLoading(true);
 
       const dataResponse = await fetch(
         `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${objectCode}/view/${viewContentCode}/data/detail/${dataSerial}`,
@@ -168,11 +197,69 @@ export default function DynamicPageDetail() {
       setCurrentPage(data.data?.page);
       setTotalPages(data.data?.total_page);
 
-      setIsLoading(false);
+      setIsDataLoading(false);
     } catch (error) {
       console.error("Data API error:", error);
       setResponseData({ error: (error as Error).message });
+      setIsDataLoading(false);
     }
+  };
+
+  const fetchTableData = async (tableComponent: ViewChild, page: number = 1) => {
+    try {
+      setTableLoading(true);
+      const response = await fetch(
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/${tableComponent.props?.objectCode || objectCode}/view/${tableComponent.props?.viewContentCode || viewContentCode}/data`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filters: tableComponent.props?.filters?.map((filter: any) => ({
+              ...filter,
+              filter_item: Object.entries(filter.filter_item).reduce((acc: any, [key, value]: [string, any]) => {
+                if (typeof value === 'object' && value.value?.startsWith('${')) {
+                  const paramName = value.value.slice(2, -1);
+                  acc[key] = {
+                    ...value,
+                    value: paramName === 'serial' ? dataSerial : params[paramName] || ''
+                  };
+                } else {
+                  acc[key] = value;
+                }
+                return acc;
+              }, {})
+            })) || [],
+            orders: [],
+            page: page,
+            page_size: 20,
+            object_code: tableComponent.props?.objectCode || objectCode,
+            tenant_code: tenantCode,
+            product_code: productCode,
+            view_content_code: tableComponent.props?.viewContentCode || viewContentCode,
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch table data");
+      }
+
+      const data = await response.json();
+      setTableData(data.data);
+      setTableLoading(false);
+    } catch (error) {
+      console.error("Table Data API error:", error);
+      setTableData({ error: (error as Error).message });
+      setTableLoading(false);
+    }
+  };
+
+  const handleTablePageClick = (tableComponent: ViewChild) => (event: { selected: number }) => {
+    const newPage = event.selected + 1;
+    setTablePage(newPage);
+    fetchTableData(tableComponent, newPage);
   };
 
   useEffect(() => {
@@ -185,6 +272,7 @@ export default function DynamicPageDetail() {
 
   return (
     <div className="flex flex-col items-left justify-left min-h-screen bg-gray-100">
+      <LoadingOverlay isLoading={isLayoutLoading || isDataLoading || tableLoading} />
       <div className="bg-white p-4 rounded-lg shadow-md">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
@@ -228,6 +316,58 @@ export default function DynamicPageDetail() {
                       viewLayout={viewLayout}
                       responseData={responseData}
                     />
+                  </CardContent>
+                </Card>
+              );
+            } else if (child.type === "table") {
+              const fields = child.props?.fields || [];
+              return (
+                <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)]">
+                  <CardContent className="pt-6 pb-6">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        {child.props?.title || `${toLabel(child.props?.objectCode || objectCode)}`}
+                      </h2>
+                    </div>
+                    <DynamicTable
+                      fields={fields}
+                      rows={tableData?.items || []}
+                      currentPage={tableData?.page || 1}
+                      totalPages={tableData?.total_page || 1}
+                      is_displaying_metadata_column={child.props?.is_displaying_metadata_column}
+                      loading={tableLoading}
+                      innerWidth={innerWidth || 0}
+                      actionButtonOpen={actionButtonOpen}
+                      setActionButtonOpen={setActionButtonOpen}
+                      routeParams={{
+                        tenantCode: tenantCode as string,
+                        productCode: productCode as string,
+                        objectCode: child.props?.objectCode || objectCode as string,
+                        viewContentCode: child.props?.viewContentCode || viewContentCode as string
+                      }}
+                      fixHeight={child.props?.fixHeight}
+                      maxHeight={child.props?.maxHeight}
+                      refreshData={() => fetchTableData(child)}
+                    />
+                    <div className="flex justify-end mt-4 mr-4 pb-4">
+                      <ReactPaginate
+                        containerClassName="flex space-x-2 items-center text-sm"
+                        pageClassName="px-3 py-1 rounded cursor-pointer rounded-md border"
+                        activeClassName="bg-blue-500 text-white active cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        previousClassName="px-3 py-1 border rounded cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        nextClassName="px-3 py-1 border rounded cursor-pointer rounded-md shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
+                        breakClassName="px-3 py-1"
+                        disabledClassName="opacity-50 cursor-not-allowed"
+                        previousLabel="Prev"
+                        nextLabel="Next"
+                        breakLabel={'...'}
+                        pageCount={tableData?.total_page || 1}
+                        marginPagesDisplayed={2}
+                        pageRangeDisplayed={5}
+                        onPageChange={handleTablePageClick(child)}
+                        forcePage={tablePage - 1}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               );

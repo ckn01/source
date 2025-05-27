@@ -38,6 +38,8 @@ interface DynamicTableProps {
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
   routeParams: RouteParams;
   refreshData?: () => void;
+  fixHeight?: string;
+  maxHeight?: string;
   onColorPaletteChange?: (colors: {
     primary: string;
     secondary: string;
@@ -59,6 +61,8 @@ export function DynamicTable({
   setActionButtonOpen,
   routeParams,
   refreshData,
+  fixHeight,
+  maxHeight,
   onColorPaletteChange
 }: DynamicTableProps) {
   const [colorPalette, setColorPalette] = useState<string[]>([]);
@@ -108,7 +112,14 @@ export function DynamicTable({
   }, [routeParams.tenantCode, routeParams.productCode, onColorPaletteChange]);
 
   return (
-    <div className="relative overflow-x-auto" style={{ minHeight: 'calc(100vh - 400px)' }}>
+    <div
+      className="relative overflow-x-auto"
+      style={{
+        minHeight: fixHeight || (rows.length > 0 ? 'auto' : 'calc(100vh - 400px)'),
+        maxHeight: maxHeight || 'none',
+        paddingBottom: rows.length > 0 ? '120px' : '0'
+      }}
+    >
       <div className="relative h-full">
         {loading && (
           <div className="absolute top-0 left-0 w-full h-full bg-white/60 flex items-center justify-center z-10">
@@ -116,7 +127,7 @@ export function DynamicTable({
           </div>
         )}
 
-        <table className="table-auto h-full border border-gray-100 whitespace-nowrap">
+        <table className="table-auto w-full border border-gray-100 whitespace-nowrap">
           <thead>
             <tr className="bg-gray-100">
               <th
