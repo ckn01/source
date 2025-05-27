@@ -1080,6 +1080,9 @@ func (r *repository) HandleChainingJoinQuery(ctx context.Context, query, fieldNa
 				joinAlias = joinAliasUpdated
 			}
 
+			// clean join alias if it contains . convert into _
+			joinAlias = strings.ReplaceAll(joinAlias, ".", "_")
+
 			joinAliasField := joinAlias
 			joinTableName := tableName
 			if nextJoinAlias != "" {
