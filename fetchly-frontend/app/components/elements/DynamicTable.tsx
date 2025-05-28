@@ -16,6 +16,7 @@ const metadataColumnList = [
 interface Field {
   field_code: string;
   field_name: string;
+  field_order?: number;
 }
 
 interface RouteParams {
@@ -139,23 +140,26 @@ export function DynamicTable({
               >
               </th>
 
-              {fields.map((field) => {
-                if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
-                  return null; // skip rendering this column
-                }
+              {fields
+                .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
+                .sort((a, b) => (a.field_order || 0) - (b.field_order || 0))
+                .map((field) => {
+                  if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
+                    return null; // skip rendering this column
+                  }
 
-                return (
-                  <th
-                    key={field.field_code}
-                    className="px-2 py-4 border border-gray-100 text-left"
-                    style={{
-                      minWidth: `${field.field_name.length * 10 + 40}px`,
-                    }}
-                  >
-                    {field.field_name}
-                  </th>
-                )
-              })}
+                  return (
+                    <th
+                      key={field.field_code}
+                      className="px-2 py-4 border border-gray-100 text-left"
+                      style={{
+                        minWidth: `${field.field_name.length * 10 + 40}px`,
+                      }}
+                    >
+                      {field.field_name}
+                    </th>
+                  )
+                })}
             </tr>
           </thead>
           <tbody>
@@ -166,10 +170,9 @@ export function DynamicTable({
                 let expandableFieldCode: string | null = null;
 
                 if (rowIndex === 0) {
-                  const visibleFields = fields.filter(
-                    (field) =>
-                      is_displaying_metadata_column || !metadataColumnList.includes(field.field_code)
-                  );
+                  const visibleFields = fields
+                    .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
+                    .sort((a, b) => (a.field_order || 0) - (b.field_order || 0));
 
                   totalFixedWidth = visibleFields.reduce((sum, field) => {
                     return sum + (field.field_name.length * 10 + 40);
@@ -200,27 +203,30 @@ export function DynamicTable({
                       />
                     </td>
 
-                    {fields.map((field) => {
-                      if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
-                        return null; // skip rendering this column
-                      }
+                    {fields
+                      .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
+                      .sort((a, b) => (a.field_order || 0) - (b.field_order || 0))
+                      .map((field) => {
+                        if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
+                          return null; // skip rendering this column
+                        }
 
-                      const rowWidth = field.field_name.length * 10 + 40;
-                      const isExpandable = rowIndex === 0 && field.field_code === expandableFieldCode;
+                        const rowWidth = field.field_name.length * 10 + 40;
+                        const isExpandable = rowIndex === 0 && field.field_code === expandableFieldCode;
 
-                      return (
-                        <td
-                          key={field.field_code}
-                          className="px-2 py-4 border border-gray-100 text-gray-600"
-                          style={{
-                            minWidth: `${rowWidth}px`,
-                            ...(isExpandable ? { width: "100%" } : {})
-                          }}
-                        >
-                          {String(row[field.field_code]?.display_value ?? "")}
-                        </td>
-                      );
-                    })}
+                        return (
+                          <td
+                            key={field.field_code}
+                            className="px-2 py-4 border border-gray-100 text-gray-600"
+                            style={{
+                              minWidth: `${rowWidth}px`,
+                              ...(isExpandable ? { width: "100%" } : {})
+                            }}
+                          >
+                            {String(row[field.field_code]?.display_value ?? "")}
+                          </td>
+                        );
+                      })}
                   </tr>
                 );
               })

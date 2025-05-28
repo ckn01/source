@@ -77,7 +77,7 @@ export default function DynamicPageDetail() {
 
   // Child table filter states
   const [childTableFilters, setChildTableFilters] = useState<Record<string, any>>({});
-  const [childAvailableFields, setChildAvailableFields] = useState<Record<string, { field_code: string; field_name: string }[]>>({});
+  const [childAvailableFields, setChildAvailableFields] = useState<Record<string, { field_code: string; field_name: string; field_order?: number }[]>>({});
   const [childSelectedField, setChildSelectedField] = useState<Record<string, string>>({});
   const [selectedFieldPerGroup, setSelectedFieldPerGroup] = useState<Record<string, string>>({});
   const [activeChildObjectCode, setActiveChildObjectCode] = useState<string>("");
@@ -239,7 +239,7 @@ export default function DynamicPageDetail() {
       const fields = layoutData.fields || [];
       const is_including_metadata_column = layoutData.layout?.children?.[0]?.props?.is_displaying_metadata_column;
 
-      const childAvailableFieldsList: { field_code: string; field_name: string }[] = [];
+      const childAvailableFieldsList: { field_code: string; field_name: string; field_order?: number }[] = [];
       for (const field of fields) {
         if (
           field.field_code &&
@@ -249,6 +249,7 @@ export default function DynamicPageDetail() {
           childAvailableFieldsList.push({
             field_code: field.field_code,
             field_name: field.field_name,
+            field_order: field.field_order
           });
         }
       }
