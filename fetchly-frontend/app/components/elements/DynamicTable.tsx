@@ -112,6 +112,11 @@ export function DynamicTable({
     fetchTenantData();
   }, [routeParams.tenantCode, routeParams.productCode, onColorPaletteChange]);
 
+  // Filter and sort fields based on field_order
+  const sortedFields = fields
+    .filter(field => !field.field_code.includes('.'))
+    .sort((a, b) => (a.field_order || 0) - (b.field_order || 0));
+
   return (
     <div
       className="relative overflow-x-auto"
@@ -140,9 +145,8 @@ export function DynamicTable({
               >
               </th>
 
-              {fields
+              {sortedFields
                 .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
-                .sort((a, b) => (a.field_order || 0) - (b.field_order || 0))
                 .map((field) => {
                   if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
                     return null; // skip rendering this column
@@ -171,7 +175,7 @@ export function DynamicTable({
 
                 if (rowIndex === 0) {
                   const visibleFields = fields
-                    .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
+                    .filter(field => !field.field_code.includes('.'))
                     .sort((a, b) => (a.field_order || 0) - (b.field_order || 0));
 
                   totalFixedWidth = visibleFields.reduce((sum, field) => {
@@ -204,7 +208,7 @@ export function DynamicTable({
                     </td>
 
                     {fields
-                      .filter(field => !is_displaying_metadata_column || !metadataColumnList.includes(field.field_code))
+                      .filter(field => !field.field_code.includes('.'))
                       .sort((a, b) => (a.field_order || 0) - (b.field_order || 0))
                       .map((field) => {
                         if (!is_displaying_metadata_column && metadataColumnList.includes(field.field_code)) {
