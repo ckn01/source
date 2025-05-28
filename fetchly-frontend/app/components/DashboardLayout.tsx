@@ -282,7 +282,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                               return (<li key={child.title}>
                                 <Link
                                   href={`/${tenantCode}/${productCode}${child.url}`}
-                                  className={`flex items-center gap-x-1 p-4 pl-4 transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
+                                  className={`flex items-center gap-x-1 p-4 ${isSidebarOpen ? 'pl-8' : 'pl-4'} transition-colors text-base ${pathname === `/${tenantCode}/${productCode}${child.url}`
                                     ? colorPalette.length > 0
                                       ? 'bg-opacity-20 bg-white font-bold text-amber-800'
                                       : 'bg-opacity-100 hover:bg-amber-600 bg-amber-800 font-bold text-amber-100'

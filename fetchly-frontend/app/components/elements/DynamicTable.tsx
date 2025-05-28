@@ -118,7 +118,7 @@ export function DynamicTable({
       style={{
         minHeight: fixHeight || (rows.length > 0 ? 'auto' : 'calc(100vh - 400px)'),
         maxHeight: maxHeight || 'none',
-        paddingBottom: rows.length > 0 ? '120px' : '0'
+        paddingBottom: rows.length > 0 ? '108px' : '0'
       }}
     >
       <div className="relative h-full">
