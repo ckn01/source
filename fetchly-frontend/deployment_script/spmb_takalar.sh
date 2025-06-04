@@ -43,5 +43,5 @@ else
   fi
 
   echo "=== Starting app in production mode on port 6061..."
-  npm run start -- -p 6062
+  npm run start -- -p 6064
 fi
