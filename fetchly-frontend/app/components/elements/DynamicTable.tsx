@@ -48,6 +48,7 @@ interface DynamicTableProps {
     hoverSecondary: string;
     textColor: 'dark' | 'light';
   }) => void;
+  viewContent?: any;
 }
 
 export function DynamicTable({
@@ -64,7 +65,8 @@ export function DynamicTable({
   refreshData,
   fixHeight,
   maxHeight,
-  onColorPaletteChange
+  onColorPaletteChange,
+  viewContent
 }: DynamicTableProps) {
   const [colorPalette, setColorPalette] = useState<string[]>([]);
   const [textColor, setTextColor] = useState<'dark' | 'light'>('light');
@@ -197,14 +199,17 @@ export function DynamicTable({
                         minWidth: `48px`
                       }}
                     >
-                      <ActionMenuButton
-                        serial={String(row["serial"].value) || ""}
-                        tenantCode={routeParams.tenantCode}
-                        productCode={routeParams.productCode}
-                        objectCode={routeParams.objectCode}
-                        viewContentCode={routeParams.viewContentCode}
-                        onDeleteSuccess={refreshData}
-                      />
+                      {viewContent?.view_content_config?.actionButtons?.menu !== false && (
+                        <ActionMenuButton
+                          serial={String(row["serial"].value) || ""}
+                          tenantCode={routeParams.tenantCode}
+                          productCode={routeParams.productCode}
+                          objectCode={routeParams.objectCode}
+                          viewContentCode={routeParams.viewContentCode}
+                          onDeleteSuccess={refreshData}
+                          viewContent={viewContent}
+                        />
+                      )}
                     </td>
 
                     {fields

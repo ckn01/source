@@ -67,7 +67,7 @@ func (r *repository) GetViewContentByKeys(ctx context.Context, request entity.Ge
 		db.Debug()
 	}
 
-	query := fmt.Sprintf("SELECT * FROM get_view_content_all(%s, %s, %s, %s, %s)", tenantCode, productCode, objectCode, viewContentCode, layoutType)
+	query := fmt.Sprintf("SELECT * FROM get_view_content_all_v2(%s, %s, %s, %s, %s)", tenantCode, productCode, objectCode, viewContentCode, layoutType)
 	rows, err := db.Raw(query).Rows()
 	if err != nil {
 		return resp, err

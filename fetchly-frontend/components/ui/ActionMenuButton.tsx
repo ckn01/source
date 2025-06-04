@@ -12,9 +12,10 @@ interface ActionMenuButtonProps {
   viewContentCode: string;
   onDeleteSuccess?: () => void;
   style?: React.CSSProperties;
+  viewContent?: any;
 }
 
-const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewContentCode, onDeleteSuccess, style }: ActionMenuButtonProps) => {
+const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewContentCode, onDeleteSuccess, style, viewContent }: ActionMenuButtonProps) => {
   const [open, setOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -168,31 +169,37 @@ const ActionMenuButton = ({ serial, tenantCode, productCode, objectCode, viewCon
       {open && (
         <div className="absolute left-0 mt-2 w-40 rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.4)] bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-2 text-sm text-gray-700 flex flex-col">
-            <button
-              className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200"
-              onClick={() => {
-                // Handle edit action, redirect to ./edit/serial
-                window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/edit/${serial}`;
-              }}
-            >
-              <PencilIcon size={16} /> Edit
-            </button>
-            <button
-              className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200 text-cyan-600"
-              onClick={() => {
-                window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/detail/${serial}`;
-              }}
-            >
-              <BookOpenText size={16} /> View Details
-            </button>
-            <button
-              className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200 text-red-600"
-              onClick={() => {
-                setSerialForDelete(serial)
-              }}
-            >
-              <TrashIcon size={16} /> Delete
-            </button>
+            {viewContent?.view_content_config?.actionButtons?.edit !== false && (
+              <button
+                className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200"
+                onClick={() => {
+                  // Handle edit action, redirect to ./edit/serial
+                  window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/edit/${serial}`;
+                }}
+              >
+                <PencilIcon size={16} /> Edit
+              </button>
+            )}
+            {viewContent?.view_content_config?.actionButtons?.view !== false && (
+              <button
+                className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200 text-cyan-600"
+                onClick={() => {
+                  window.location.href = `/${tenantCode}/${productCode}/${objectCode}/${viewContentCode}/detail/${serial}`;
+                }}
+              >
+                <BookOpenText size={16} /> View Details
+              </button>
+            )}
+            {viewContent?.view_content_config?.actionButtons?.delete !== false && (
+              <button
+                className="flex gap-1 cursor-pointer w-full text-left px-4 py-2 hover:bg-gray-200 text-red-600"
+                onClick={() => {
+                  setSerialForDelete(serial)
+                }}
+              >
+                <TrashIcon size={16} /> Delete
+              </button>
+            )}
           </div>
         </div>
       )}

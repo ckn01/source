@@ -41,18 +41,19 @@ type ViewContentResponse struct {
 }
 
 type ViewContent struct {
-	Serial        string     `json:"serial"`
-	Code          string     `json:"code"`
-	Name          string     `json:"name"`
-	Tenant        Tenants    `json:"tenant"`
-	Product       Products   `json:"product"`
-	Object        Objects    `json:"object"`
-	OwnerSerial   string     `json:"owner_serial"`
-	ViewLayout    ViewLayout `json:"view_layout"`
-	ViewSchema    ViewSchema `json:"view_schema"`
-	LayoutType    string     `json:"layout_type"`
-	IsDefault     bool       `json:"is_default"`
-	IsShownInList bool       `json:"is_shown_in_list"`
+	Serial            string         `json:"serial"`
+	Code              string         `json:"code"`
+	Name              string         `json:"name"`
+	Tenant            Tenants        `json:"tenant"`
+	Product           Products       `json:"product"`
+	Object            Objects        `json:"object"`
+	OwnerSerial       string         `json:"owner_serial"`
+	ViewLayout        ViewLayout     `json:"view_layout"`
+	ViewSchema        ViewSchema     `json:"view_schema"`
+	LayoutType        string         `json:"layout_type"`
+	IsDefault         bool           `json:"is_default"`
+	IsShownInList     bool           `json:"is_shown_in_list"`
+	ViewContentConfig map[string]any `json:"view_content_config"`
 }
 
 type GetNavigationItemByViewContentSerialRequest struct {

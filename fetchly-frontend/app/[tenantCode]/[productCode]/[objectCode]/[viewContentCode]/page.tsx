@@ -51,6 +51,7 @@ interface DynamicTableProps {
   setActionButtonOpen: React.Dispatch<React.SetStateAction<boolean[]>>;
   routeParams: RouteParams;
   refreshData?: () => void;
+  viewContent: any;
 }
 
 type FilterItem = {
@@ -397,19 +398,21 @@ export default function DynamicPage() {
                 <Card key={index} className="rounded-lg shadow-[0_4px_0_0_rgba(0,0,0,0.2)] pt-0 pb-4">
                   <CardContent className="p-0 pb-0 overflow-x-auto">
                     <div className="flex justify-end gap-0 mb-2">
-                      <button
-                        className="cursor-pointer flex items-center gap-2 m-2 px-3 py-2 rounded-lg transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none hover:brightness-110"
-                        onClick={() => {
-                          addNewItem()
-                        }}
-                        style={{
-                          backgroundColor: buttonColors.primary,
-                          color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
-                        }}
-                      >
-                        <PlusCircle size={18} />
-                        Add New {toLabel(objectCode)}
-                      </button>
+                      {viewContent?.view_content_config?.actionButtons?.add !== false && (
+                        <button
+                          className="cursor-pointer flex items-center gap-2 m-2 px-3 py-2 rounded-lg transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none hover:brightness-110"
+                          onClick={() => {
+                            addNewItem()
+                          }}
+                          style={{
+                            backgroundColor: buttonColors.primary,
+                            color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
+                          }}
+                        >
+                          <PlusCircle size={18} />
+                          Add New {toLabel(objectCode)}
+                        </button>
+                      )}
 
                       <button
                         className="cursor-pointer flex items-center gap-2 m-2 px-3 py-2 rounded-lg transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none hover:brightness-110"
@@ -425,21 +428,23 @@ export default function DynamicPage() {
                         Filter
                       </button>
 
-                      <ExportButton
-                        tenantCode={tenantCode}
-                        productCode={productCode}
-                        objectCode={objectCode}
-                        viewContentCode={viewContentCode}
-                        filters={filters}
-                        fields={child.props?.fields?.reduce((acc: any, field: any) => {
-                          acc[field.field_code] = field;
-                          return acc;
-                        }, {}) || {}}
-                        style={{
-                          backgroundColor: buttonColors.secondary,
-                          color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
-                        }}
-                      />
+                      {viewContent?.view_content_config?.actionButtons?.export !== false && (
+                        <ExportButton
+                          tenantCode={tenantCode}
+                          productCode={productCode}
+                          objectCode={objectCode}
+                          viewContentCode={viewContentCode}
+                          filters={filters}
+                          fields={child.props?.fields?.reduce((acc: any, field: any) => {
+                            acc[field.field_code] = field;
+                            return acc;
+                          }, {}) || {}}
+                          style={{
+                            backgroundColor: buttonColors.secondary,
+                            color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
+                          }}
+                        />
+                      )}
 
                       <button
                         className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-3 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"
@@ -723,6 +728,7 @@ export default function DynamicPage() {
                       }}
                       refreshData={() => fetchData(responseLayout, currentPage)}
                       onColorPaletteChange={setButtonColors}
+                      viewContent={viewContent}
                     />
 
                     <div className="flex justify-end mt-4 mr-4 pb-4">
