@@ -1,7 +1,7 @@
 // appConfig.ts
 export const dashboardConfig = {
   title: "SPMB Kabupaten Takalar",
-  backendAPIURL: "http://fetchly-backend-smp.spmbtakalarkab.id",
+  backendAPIURL: "https://fetchly-backend-smp.spmbtakalarkab.id",
   defaultTenantCode: "public",
   defaultProductCode: "spmb",
   defaultObjectCode: "default",
