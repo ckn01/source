@@ -14,7 +14,7 @@ func GenerateXLSX(headerList []string, records []map[int32]string) (base64XLSXSt
 	sheet1Name := "Sheet One"
 	xlsx.SetSheetName(xlsx.GetSheetName(1), sheet1Name)
 
-	// construt header names
+	// construct header names
 	for i := 0; i < len(headerList); i++ {
 		xlsx.SetCellValue(sheet1Name, fmt.Sprintf("%s1", excelize.ToAlphaString(i)), headerList[i])
 	}
@@ -32,12 +32,16 @@ func GenerateXLSX(headerList []string, records []map[int32]string) (base64XLSXSt
 		}
 	}
 
+	// Save to buffer
 	fileBuffer, err := xlsx.WriteToBuffer()
 	if err != nil {
-		log.Print(err.Error())
+		log.Printf("error writing to buffer: %v", err)
+		return "", err
 	}
-	base64Output := base64.StdEncoding.EncodeToString(fileBuffer.Bytes())
-	base64XLSXString = `data:application/vnd.ms-excel;base64,` + base64Output
 
-	return
+	// Convert to base64
+	base64Output := base64.StdEncoding.EncodeToString(fileBuffer.Bytes())
+
+	// Return with proper XLSX MIME type
+	return fmt.Sprintf("data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,%s", base64Output), nil
 }

@@ -54,6 +54,7 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 					v.POST("/data", httpHandler.GetObjectData)
 					v.POST("/data/raw", httpHandler.GetDataByRawQuery)
 					v.POST("/data/detail/:serial", httpHandler.GetObjectDetail)
+					v.POST("/export", httpHandler.ExportObjectData)
 					v.POST("/:layout_type", httpHandler.GetContentLayoutByKeys)
 				}
 

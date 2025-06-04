@@ -1,9 +1,13 @@
 package module
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/csv"
 	"fmt"
 	"strings"
+	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -11,6 +15,7 @@ import (
 	"github.com/fetchlydev/source/fetchly-backend/config"
 	"github.com/fetchlydev/source/fetchly-backend/core/entity"
 	"github.com/fetchlydev/source/fetchly-backend/core/repository"
+	"github.com/fetchlydev/source/fetchly-backend/pkg/helper"
 )
 
 type CatalogUsecase interface {
@@ -24,6 +29,7 @@ type CatalogUsecase interface {
 	DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error)
 	GetObjectFieldsByObjectCode(ctx context.Context, request entity.CatalogQuery) (resp map[string]any, err error)
 	GetContentLayoutByKeys(ctx context.Context, request entity.GetViewContentByKeysRequest, catalogQuery entity.CatalogQuery) (resp entity.ViewContentResponse, err error)
+	ExportObjectData(ctx context.Context, request entity.CatalogQuery, format entity.ExportFormat, isIncludeMetadata bool) (resp entity.ExportResponse, err error)
 }
 
 type catalogUsecase struct {
@@ -631,4 +637,108 @@ func (uc *catalogUsecase) UpdateObjectData(ctx context.Context, request entity.D
 
 func (uc *catalogUsecase) DeleteObjectData(ctx context.Context, request entity.DataMutationRequest) (err error) {
 	return uc.catalogRepo.DeleteObjectData(ctx, request)
+}
+
+func (uc *catalogUsecase) ExportObjectData(ctx context.Context, request entity.CatalogQuery, format entity.ExportFormat, isIncludeMetadata bool) (resp entity.ExportResponse, err error) {
+	// Get data using existing GetObjectData function
+	data, err := uc.GetObjectData(ctx, request)
+	if err != nil {
+		return resp, err
+	}
+
+	// Prepare headers and records
+	headers := make([]string, 0)
+	records := make([]map[int32]string, 0)
+
+	// Get headers from first item if available
+	if len(data.Items) > 0 {
+		for _, item := range data.Items[0] {
+			// Skip metadata fields if is_include_metadata is false
+			if !isIncludeMetadata {
+				fieldName := item.FieldName
+				// Convert field name to lowercase for comparison
+				fieldNameLower := strings.ToLower(fieldName)
+				// Check both space and underscore formats
+				if strings.EqualFold(fieldNameLower, "created at") || strings.EqualFold(fieldNameLower, "created_at") ||
+					strings.EqualFold(fieldNameLower, "created by") || strings.EqualFold(fieldNameLower, "created_by") ||
+					strings.EqualFold(fieldNameLower, "updated at") || strings.EqualFold(fieldNameLower, "updated_at") ||
+					strings.EqualFold(fieldNameLower, "updated by") || strings.EqualFold(fieldNameLower, "updated_by") ||
+					strings.EqualFold(fieldNameLower, "deleted at") || strings.EqualFold(fieldNameLower, "deleted_at") ||
+					strings.EqualFold(fieldNameLower, "deleted by") || strings.EqualFold(fieldNameLower, "deleted_by") {
+					continue
+				}
+			}
+			headers = append(headers, item.FieldName)
+		}
+	}
+
+	// Convert items to records
+	for _, item := range data.Items {
+		record := make(map[int32]string)
+		colIndex := int32(0)
+		for _, fieldName := range headers {
+			for _, field := range item {
+				if field.FieldName == fieldName {
+					// Convert value to string
+					var value string
+					if field.DisplayValue != nil {
+						value = fmt.Sprintf("%v", field.DisplayValue)
+					}
+					record[colIndex] = value
+					break
+				}
+			}
+			colIndex++
+		}
+		records = append(records, record)
+	}
+
+	// Generate file based on format
+	switch format {
+	case entity.ExportFormatXLSX:
+		base64Data, err := helper.GenerateXLSX(headers, records)
+		if err != nil {
+			return resp, fmt.Errorf("failed to generate XLSX file: %w", err)
+		}
+		resp.Data = base64Data
+		resp.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+		resp.FileName = fmt.Sprintf("%s_%s.xlsx", request.ObjectCode, time.Now().Format("20060102_150405"))
+
+	case entity.ExportFormatCSV:
+		// Create CSV buffer
+		var csvBuffer bytes.Buffer
+		writer := csv.NewWriter(&csvBuffer)
+
+		// Write headers
+		if err := writer.Write(headers); err != nil {
+			return resp, err
+		}
+
+		// Write records
+		for _, record := range records {
+			row := make([]string, len(headers))
+			for i := range headers {
+				row[i] = record[int32(i)]
+			}
+			if err := writer.Write(row); err != nil {
+				return resp, err
+			}
+		}
+
+		writer.Flush()
+		if err := writer.Error(); err != nil {
+			return resp, err
+		}
+
+		// Convert to base64
+		base64Data := base64.StdEncoding.EncodeToString(csvBuffer.Bytes())
+		resp.Data = fmt.Sprintf("data:text/csv;base64,%s", base64Data)
+		resp.ContentType = "text/csv"
+		resp.FileName = fmt.Sprintf("%s_%s.csv", request.ObjectCode, time.Now().Format("20060102_150405"))
+
+	default:
+		return resp, fmt.Errorf("unsupported export format: %s", format)
+	}
+
+	return resp, nil
 }

@@ -5,6 +5,7 @@ import { DynamicLayout } from "@/app/components/DynamicLayout";
 import { DynamicTable } from "@/app/components/elements/DynamicTable";
 import SidebarPanel from "@/components/SidebarPanel";
 import { Card, CardContent } from "@/components/ui/card";
+import ExportButton from "@/components/ui/ExportButton";
 import { toLabel } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { CheckCircle, Filter, PlusCircle, RefreshCcw, TrashIcon, XCircle } from "lucide-react";
@@ -423,6 +424,22 @@ export default function DynamicPage() {
                         <Filter size={18} />
                         Filter
                       </button>
+
+                      <ExportButton
+                        tenantCode={tenantCode}
+                        productCode={productCode}
+                        objectCode={objectCode}
+                        viewContentCode={viewContentCode}
+                        filters={filters}
+                        fields={child.props?.fields?.reduce((acc: any, field: any) => {
+                          acc[field.field_code] = field;
+                          return acc;
+                        }, {}) || {}}
+                        style={{
+                          backgroundColor: buttonColors.secondary,
+                          color: buttonColors.textColor === 'dark' ? '#1f2937' : '#ffffff'
+                        }}
+                      />
 
                       <button
                         className="cursor-pointer flex items-center gap-2 m-2 bg-gray-100 text-gray px-3 py-2 rounded-lg hover:bg-gray-200 transition shadow-[0_4px_0_0_rgba(0,0,0,0.4)] active:translate-y-1 active:shadow-none"

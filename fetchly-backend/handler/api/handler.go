@@ -26,6 +26,7 @@ type HTTPHandler interface {
 	RefreshToken(c *gin.Context)
 	EncryptPassword(c *gin.Context)
 	GetCurrentUser(c *gin.Context)
+	ExportObjectData(c *gin.Context)
 }
 
 type httpHandler struct {
@@ -506,4 +507,50 @@ func (h *httpHandler) GetCurrentUser(c *gin.Context) {
 	}
 
 	helper.ResponseOutput(c, int32(statusCode), statusMessage, resp)
+}
+
+func (h *httpHandler) ExportObjectData(c *gin.Context) {
+	var request entity.CatalogQuery
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Get format from query parameter, default to XLSX
+	format := entity.ExportFormatXLSX
+	if formatStr := c.Query("format"); formatStr != "" {
+		format = entity.ExportFormat(formatStr)
+		if format != entity.ExportFormatXLSX && format != entity.ExportFormatCSV {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    http.StatusBadRequest,
+				"message": "unsupported export format",
+			})
+			return
+		}
+	}
+
+	// Get is_include_metadata parameter, default to false
+	isIncludeMetadata := false
+	if includeMetadata := c.Query("is_include_metadata"); includeMetadata != "" {
+		isIncludeMetadata = includeMetadata == "true"
+	}
+
+	// Export data
+	response, err := h.catalogUc.ExportObjectData(c.Request.Context(), request, format, isIncludeMetadata)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "success",
+		"data":    response,
+	})
 }

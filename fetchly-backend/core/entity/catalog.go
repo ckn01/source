@@ -228,3 +228,16 @@ type ForeignKeyInfo struct {
 	ForeignTable  string `json:"foreign_table"`
 	ForeignColumn string `json:"foreign_column"`
 }
+
+type ExportFormat string
+
+const (
+	ExportFormatXLSX ExportFormat = "xlsx"
+	ExportFormatCSV  ExportFormat = "csv"
+)
+
+type ExportResponse struct {
+	Data        string `json:"data"`         // Base64 encoded data
+	ContentType string `json:"content_type"` // MIME type
+	FileName    string `json:"file_name"`    // Suggested filename
+}
