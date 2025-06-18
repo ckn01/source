@@ -62,6 +62,16 @@ type RefreshTokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+type GoogleLoginRequest struct {
+	Credential string `json:"credential"`
+}
+
+type GoogleLoginResponse struct {
+	Token        string              `json:"token"`
+	RefreshToken string              `json:"refresh_token"`
+	User         map[string]DataItem `json:"user"`
+}
+
 type JWTUserData interface {
 	~map[string]any | ~map[string]DataItem
 }

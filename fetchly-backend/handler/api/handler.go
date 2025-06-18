@@ -27,6 +27,7 @@ type HTTPHandler interface {
 	EncryptPassword(c *gin.Context)
 	GetCurrentUser(c *gin.Context)
 	ExportObjectData(c *gin.Context)
+	GoogleLogin(c *gin.Context)
 }
 
 type httpHandler struct {
@@ -553,4 +554,49 @@ func (h *httpHandler) ExportObjectData(c *gin.Context) {
 		"message": "success",
 		"data":    response,
 	})
+}
+
+func (h *httpHandler) GoogleLogin(c *gin.Context) {
+	var statusCode int32 = entity.DefaultSucessCode
+	var statusMessage string = entity.DefaultSuccessMessage
+
+	request := entity.GoogleLoginRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		statusCode = http.StatusBadRequest
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, statusCode, statusMessage, nil)
+		return
+	}
+
+	tenantCode := c.Param(entity.TENANT_CODE)
+	if tenantCode == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	productCode := c.Param(entity.PRODUCT_CODE)
+	if productCode == "" {
+		statusCode = http.StatusBadRequest
+		statusMessage = entity.ErrorSerialEmpty.Error()
+
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	response, err := h.authUc.GoogleLogin(c, tenantCode, productCode, request.Credential)
+	if err != nil {
+		statusCode = http.StatusInternalServerError
+		statusMessage = err.Error()
+
+		log.Println(statusMessage)
+		helper.ResponseOutput(c, int32(statusCode), statusMessage, nil)
+		return
+	}
+
+	helper.ResponseOutput(c, int32(statusCode), statusMessage, response)
 }

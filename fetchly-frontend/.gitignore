@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts 
+
+fetchly-backend/.env.spmb
+**/.env.spln
+**/.env.waktu_kerjaku
+
+fetchly-backend/.env.spmb
+
+.vscode/launch.json
+.vscode/*

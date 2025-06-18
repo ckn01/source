@@ -11,6 +11,7 @@
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.1.2",
+    "@react-oauth/google": "^0.12.2",
     "@types/lodash": "^4.17.17",
     "chart.js": "^4.4.9",
     "class-variance-authority": "^0.7.1",

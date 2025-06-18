@@ -69,6 +69,7 @@ func InitRouter(cfg config.Config, db *gorm.DB) (*gin.Engine, conn.CacheService)
 				auth.POST("/refresh-token", httpHandler.RefreshToken)
 				auth.POST("/encrypt-password", httpHandler.EncryptPassword)
 				auth.POST("/current-user", httpHandler.GetCurrentUser)
+				auth.POST("/google-login", httpHandler.GoogleLogin)
 			}
 		}
 	}
