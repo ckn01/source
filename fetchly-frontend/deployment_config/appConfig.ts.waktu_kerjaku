@@ -1,0 +1,14 @@
+// appConfig.ts
+export const dashboardConfig = {
+  title: "WaktuKerjaku",
+  backendAPIURL: "https://backend.fetchly.web.id",
+  defaultTenantCode: "waktu_kerjaku",
+  defaultProductCode: "waktu_kerjaku",
+  defaultObjectCode: "default",
+  defaultViewContentCode: "default",
+  isDebugMode: false
+};
+
+export const APIMethod = {
+  POST: "POST"
+}
