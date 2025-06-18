@@ -42,6 +42,6 @@ else
     echo "✔️ Build completed."
   fi
 
-  echo "=== Starting app in production mode on port 6064..."
-  npm run start -- -p 6064
+  echo "=== Starting app in production mode on port 6065..."
+  npm run start -- -p 6065
 fi
