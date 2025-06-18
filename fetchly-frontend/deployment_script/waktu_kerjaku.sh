@@ -9,10 +9,10 @@ mkdir -p ../dist/waktu_kerjaku
 
 echo "✔️ Build directories ready."
 
-echo "=== Applying environment config..."
-cp ../deployment_config/appConfig.ts.waktu_kerjaku ../app/appConfig.ts
+# echo "=== Applying environment config..."
+# cp ../deployment_config/appConfig.ts.waktu_kerjaku ../app/appConfig.ts
 
-echo "✔️ Config copied."
+# echo "✔️ Config copied."
 
 echo "=== Copying project files (excluding heavy folders)..."
 rsync -av --progress ../ ../dist/waktu_kerjaku \
