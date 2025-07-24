@@ -1,0 +1,122 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: fetchly-postgres
+    environment:
+      POSTGRES_DB: fetchly
+      POSTGRES_USER: fetchly_user
+      POSTGRES_PASSWORD: fetchly_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - fetchly-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: fetchly-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fetchly-network
+
+  # Fetchly Backend
+  fetchly-backend:
+    build:
+      context: ./fetchly-backend
+      dockerfile: Dockerfile
+      no_cache: true  # Force rebuild
+    container_name: fetchly-backend
+    environment:
+      - DB_TYPE=postgres
+      - HTTP_PORT=8080
+      - ENVIRONMENT=production
+      - FETCHLY_PGSQL_HOST=postgres
+      - FETCHLY_PGSQL_PORT=5432
+      - FETCHLY_PGSQL_USERNAME=fetchly_user
+      - FETCHLY_PGSQL_PASSWORD=fetchly_password
+      - FETCHLY_PGSQL_DBNAME=fetchly
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - INTERNAL_SECRET_KEY=fetchly-secret-key-2024
+      - DEBUG_MODE=false
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - fetchly-network
+    restart: unless-stopped
+
+  # Fetchly AI Service
+  fetchly-ai:
+    build:
+      context: ./fetchly-ai
+      dockerfile: Dockerfile
+      no_cache: true  # Force rebuild
+    container_name: fetchly-ai
+    environment:
+      - DB_TYPE=postgres
+      - HTTP_PORT=8081
+      - ENVIRONMENT=production
+      - FETCHLY_PGSQL_HOST=postgres
+      - FETCHLY_PGSQL_PORT=5432
+      - FETCHLY_PGSQL_USERNAME=fetchly_user
+      - FETCHLY_PGSQL_PASSWORD=fetchly_password
+      - FETCHLY_PGSQL_DBNAME=fetchly_ai
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PDF_PATH=/app/docs
+      - ENABLE_AI_CHATBOT=true
+      - AI_CHATBOT_KEYWORD_START=tanya ai
+      - AI_CHATBOT_KEYWORD_STOP=stop tanya ai
+      - DEBUG_MODE=false
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./fetchly-ai/docs:/app/docs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - fetchly-network
+    restart: unless-stopped
+
+  # Fetchly Frontend
+  # fetchly-frontend:
+  #   build:
+  #     context: ./fetchly-frontend
+  #     dockerfile: Dockerfile
+  #     args:
+  #       - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080
+  #       - NEXT_PUBLIC_DEFAULT_TENANT_CODE=fetchly
+  #       - NEXT_PUBLIC_DEFAULT_PRODUCT_CODE=dashboard
+  #       - NEXT_PUBLIC_DEFAULT_OBJECT_CODE=default
+  #       - NEXT_PUBLIC_DEFAULT_VIEW_CONTENT_CODE=default
+  #       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+  #   container_name: fetchly-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - fetchly-backend
+  #     - fetchly-ai
+  #   networks:
+  #     - fetchly-network
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  fetchly-network:
+    driver: bridge
