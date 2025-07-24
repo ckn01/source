@@ -61,7 +61,7 @@ export default function ProductPage() {
     try {
       const AuthToken = await getAuthValue('auth', 'session');
       const response = await fetch(
-        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/home/view/home_default/record`,
+        `${dashboardConfig.backendAPIURL}/t/${tenantCode}/p/${productCode}/o/home/view/default/record`,
         {
           method: "POST",
           headers: {

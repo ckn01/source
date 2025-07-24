@@ -31,7 +31,7 @@ type Config struct {
 
 	InternalSecretKey string `envconfig:"INTERNAL_SECRET_KEY" default:"INTERNAL_SECRET_KEY"`
 
-	GeminiAPIKey          string  `envconfig:"GEMINI_API_KEY" default:"AIzaSyAReXf40rwS8WUSSdG2Uh0mgYrib7ByNjI"`
+	GeminiAPIKey          string  `envconfig:"GEMINI_API_KEY" default:""`
 	EnableAIChatbot       bool    `envconfig:"ENABLE_AI_CHATBOT" default:"true"`
 	AIChatbotProduct      string  `envconfig:"AI_CHATBOT_PRODUCT" default:"gemini"`
 	AIChatbotModel        string  `envconfig:"AI_CHATBOT_MODEL" default:"gemini-2.0-flash"`

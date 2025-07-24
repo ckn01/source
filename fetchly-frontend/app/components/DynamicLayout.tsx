@@ -8,6 +8,7 @@ import { Heroes } from '@/app/components/elements/Heroes';
 import { PageTitle } from '@/app/components/elements/PageTitle';
 import { ScoreCard } from '@/app/components/elements/ScoreCard';
 import { Text } from '@/app/components/elements/Text';
+import { Timer } from '@/app/components/elements/Timer';
 import Footer from '@/app/components/Footer';
 import { Container } from '@/app/components/layout/Container';
 import { Grid } from '@/app/components/layout/Grid';
@@ -62,6 +63,7 @@ const componentMap: Record<string, React.ComponentType<any>> = {
   card: Card,
   dropdown: Dropdown,
   cardList: CardList,
+  timer: Timer,
 };
 
 interface DynamicLayoutProps {
@@ -264,6 +266,22 @@ export function DynamicLayout({ layout, viewContent }: DynamicLayoutProps) {
           key={config.props?.key}
           className={config.class_name}
           viewContent={viewContent}
+        />
+      );
+    }
+
+    // Special handling for Timer component
+    if (config.type.toLowerCase() === 'timer') {
+      return (
+        <ComponentType
+          key={config.props?.key}
+          className={config.class_name}
+          objectCode={config.props?.objectCode}
+          viewContentCode={config.props?.viewContentCode}
+          timerType={config.props?.timerType}
+          startTime={config.props?.startTime}
+          endTime={config.props?.endTime}
+          style={config.props?.style}
         />
       );
     }
